@@ -1,0 +1,244 @@
+import assert from 'node:assert/strict';
+import { after, before, test } from 'node:test';
+import { app, store } from '../src/server.js';
+
+let baseUrl;
+let server;
+
+async function signup(email, nickname) {
+  const requestLink = await fetch(`${baseUrl}/auth/request-link`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email })
+  });
+  assert.equal(requestLink.status, 201);
+  const { token } = await requestLink.json();
+
+  const verify = await fetch(`${baseUrl}/auth/verify`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ token })
+  });
+  assert.equal(verify.status, 200);
+  const { session_token: sessionToken, user } = await verify.json();
+
+  const nicknameResponse = await fetch(`${baseUrl}/users/nickname`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${sessionToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({ nickname })
+  });
+  assert.equal(nicknameResponse.status, 201);
+
+  return { sessionToken, user };
+}
+
+before(async () => {
+  server = app.listen(0);
+  await new Promise((resolve) => server.once('listening', resolve));
+  const { port } = server.address();
+  baseUrl = `http://127.0.0.1:${port}`;
+});
+
+after(async () => {
+  await new Promise((resolve, reject) => {
+    server.close((error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve();
+    });
+  });
+});
+
+test('rejects unapproved email domains', async () => {
+  const response = await fetch(`${baseUrl}/auth/request-link`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email: 'person@blocked.test' })
+  });
+
+  assert.equal(response.status, 403);
+});
+
+test('supports signup, nickname, post, and comment flow', async () => {
+  const requestLink = await fetch(`${baseUrl}/auth/request-link`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email: 'person@example.edu' })
+  });
+  assert.equal(requestLink.status, 201);
+  const { token } = await requestLink.json();
+
+  const verify = await fetch(`${baseUrl}/auth/verify`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ token })
+  });
+  assert.equal(verify.status, 200);
+  const { session_token: sessionToken, user } = await verify.json();
+  assert.equal(user.domain_group, 'example.edu');
+  assert.equal(user.nickname, null);
+
+  const nickname = await fetch(`${baseUrl}/users/nickname`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${sessionToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({ nickname: 'quiet_signal' })
+  });
+  assert.equal(nickname.status, 201);
+
+  const createPost = await fetch(`${baseUrl}/posts`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${sessionToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({ content: 'Hello UniAnon.' })
+  });
+  assert.equal(createPost.status, 201);
+  const { post } = await createPost.json();
+  assert.equal(post.nickname, 'quiet_signal');
+
+  const createComment = await fetch(`${baseUrl}/posts/${post.id}/comments`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${sessionToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({ content: 'First comment.' })
+  });
+  assert.equal(createComment.status, 201);
+
+  const list = await fetch(`${baseUrl}/posts`);
+  const { posts } = await list.json();
+  assert.equal(posts.length, 1);
+  assert.equal(posts[0].comments.length, 1);
+});
+
+test('stores no plaintext email on user records', () => {
+  for (const user of store.users.values()) {
+    assert.equal(Object.hasOwn(user, 'email'), false);
+  }
+});
+
+test('opens a moderation case from weighted reports and resolves by jury vote', async () => {
+  const accused = await signup('accused@example.edu', 'case_accused');
+  const reporter = await signup('reporter@example.edu', 'case_reporter');
+  const juror = await signup('juror@example.edu', 'case_juror');
+
+  store.users.get(reporter.user.user_hash).trust_level = 2;
+  store.users.get(juror.user.user_hash).trust_level = 2;
+
+  const createPost = await fetch(`${baseUrl}/posts`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${accused.sessionToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({ content: 'Content that should be reviewed.' })
+  });
+  assert.equal(createPost.status, 201);
+  const { post } = await createPost.json();
+
+  const reportResponse = await fetch(`${baseUrl}/reports`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${reporter.sessionToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      target_type: 'post',
+      target_id: post.id,
+      reason: 'Policy violation'
+    })
+  });
+  assert.equal(reportResponse.status, 201);
+  const reportResult = await reportResponse.json();
+  assert.equal(reportResult.case.status, 'open');
+
+  const voteResponse = await fetch(`${baseUrl}/governance/cases/${reportResult.case.id}/votes`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${juror.sessionToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      decision: 'violation',
+      action: 'hide_content'
+    })
+  });
+  assert.equal(voteResponse.status, 201);
+  const voteResult = await voteResponse.json();
+  assert.equal(voteResult.case.status, 'resolved');
+  assert.equal(voteResult.case.resolution.action, 'hide_content');
+
+  const list = await fetch(`${baseUrl}/posts`);
+  const { posts } = await list.json();
+  assert.equal(posts.some((visiblePost) => visiblePost.id === post.id), false);
+  assert.equal(store.auditLog.some((event) => event.operation === 'jury_decision'), true);
+});
+
+test('restricts spaces by allowed email domain', async () => {
+  const moderator = await signup('space-mod@example.edu', 'space_mod');
+  const eduUser = await signup('space-edu@example.edu', 'space_edu');
+  const orgUser = await signup('space-org@example.org', 'space_org');
+
+  store.users.get(moderator.user.user_hash).roles.push('moderator');
+
+  const createSpace = await fetch(`${baseUrl}/spaces`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${moderator.sessionToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      name: 'Example Org',
+      allowed_domains: ['example.org']
+    })
+  });
+  assert.equal(createSpace.status, 201);
+  const { space } = await createSpace.json();
+
+  const deniedPost = await fetch(`${baseUrl}/posts`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${eduUser.sessionToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      space_id: space.id,
+      content: 'I should not be able to post here.'
+    })
+  });
+  assert.equal(deniedPost.status, 403);
+
+  const allowedPost = await fetch(`${baseUrl}/posts`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${orgUser.sessionToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      space_id: space.id,
+      content: 'Visible only to example.org.'
+    })
+  });
+  assert.equal(allowedPost.status, 201);
+  const { post } = await allowedPost.json();
+
+  const publicList = await fetch(`${baseUrl}/posts?space_id=${space.id}`);
+  const publicPosts = await publicList.json();
+  assert.equal(publicPosts.posts.some((visiblePost) => visiblePost.id === post.id), false);
+
+  const orgList = await fetch(`${baseUrl}/posts?space_id=${space.id}`, {
+    headers: { authorization: `Bearer ${orgUser.sessionToken}` }
+  });
+  const orgPosts = await orgList.json();
+  assert.equal(orgPosts.posts.some((visiblePost) => visiblePost.id === post.id), true);
+});

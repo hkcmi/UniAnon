@@ -1,0 +1,17 @@
+{
+  "name": "unianon",
+  "version": "0.1.0",
+  "description": "Domain-gated anonymous community platform with stable pseudonymous identity.",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "helmet": "^7.1.0",
+    "nanoid": "^5.0.7"
+  },
+  "devDependencies": {}
+}
