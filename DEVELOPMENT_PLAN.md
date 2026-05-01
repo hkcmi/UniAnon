@@ -93,7 +93,7 @@ Goal: replace dev-only magic token responses with real email delivery.
 
 - [x] Add SMTP provider support.
 - [ ] Add SendGrid or similar provider option.
-- [ ] Add email templates.
+- [x] Add email templates.
 - [x] Stop returning magic tokens in SMTP mode.
 - [ ] Add magic link expiration tests.
 - [ ] Add auth event logging.
@@ -126,9 +126,9 @@ Goal: decide whether UniAnon remains standalone or becomes a NodeBB auth/governa
 
 Recommended next tasks:
 
-1. Add email templates.
-2. Add stronger user-facing rate-limit messages.
-3. Add auth event logging.
+1. Add stronger user-facing rate-limit messages.
+2. Add auth event logging.
+3. Add magic link expiration tests.
 4. Continue separating store logic into clearer repository/service modules.
 
 Suggested implementation order:

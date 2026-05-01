@@ -28,4 +28,5 @@ test('smtp mailer sends email without returning the token', async () => {
   assert.equal(sentMessages.length, 1);
   assert.equal(sentMessages[0].to, 'person@example.edu');
   assert.match(sentMessages[0].text, /token=smtp-token/);
+  assert.match(sentMessages[0].html, /token=smtp-token/);
 });

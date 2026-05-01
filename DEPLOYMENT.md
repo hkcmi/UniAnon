@@ -228,7 +228,7 @@ docker compose up --build
 ## Current Limits
 
 - Dev mode returns magic links in API responses.
-- SMTP delivery is available, but email templates are still basic text emails.
+- SMTP delivery sends text and HTML magic-link emails.
 - Sessions expire according to `SESSION_TTL_MS`; browser-side refresh handling is still basic.
 - Redis rate limiting is implemented for key write paths, but policy tuning is still early.
 - SQLite stores session token hashes, not plaintext session tokens.

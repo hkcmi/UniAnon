@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { config } from './config.js';
+import { renderMagicLinkEmail } from './email-templates.js';
 
 function createTransport() {
   if (config.emailDelivery !== 'smtp') {
@@ -50,17 +51,17 @@ export function createMailer(options = {}) {
         throw new Error(`Unsupported email delivery mode: ${delivery}`);
       }
 
+      const emailBody = renderMagicLinkEmail({
+        magicLink,
+        expiresInMinutes: Math.max(Math.floor(config.tokenTtlMs / 60000), 1)
+      });
+
       await transport.sendMail({
         from: config.emailFrom,
         to: email,
-        subject: 'Your UniAnon magic link',
-        text: [
-          'Use this link to sign in to UniAnon:',
-          '',
-          magicLink,
-          '',
-          'If you did not request this email, you can ignore it.'
-        ].join('\n')
+        subject: emailBody.subject,
+        text: emailBody.text,
+        html: emailBody.html
       });
 
       return {
