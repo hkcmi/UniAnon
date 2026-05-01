@@ -40,6 +40,7 @@ function hashSessionToken(token) {
 function rowToUser(row) {
   return {
     user_hash: row.user_hash,
+    nullifier: row.nullifier || row.user_hash,
     nickname: row.nickname,
     domain_group: row.domain_group,
     trust_level: row.trust_level,
@@ -124,6 +125,7 @@ function migrate(db) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       user_hash TEXT PRIMARY KEY,
+      nullifier TEXT UNIQUE,
       nickname TEXT UNIQUE,
       domain_group TEXT NOT NULL,
       trust_level INTEGER NOT NULL DEFAULT 0,
@@ -143,6 +145,7 @@ function migrate(db) {
     CREATE TABLE IF NOT EXISTS magic_tokens (
       token TEXT PRIMARY KEY,
       subject_hash TEXT,
+      nullifier TEXT,
       domain_group TEXT NOT NULL,
       expires_at INTEGER NOT NULL
     );
@@ -233,21 +236,30 @@ function migrate(db) {
   db.prepare('DELETE FROM sessions WHERE token_hash IS NULL OR token_hash = ?').run('');
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_sessions_token_hash ON sessions(token_hash)');
 
+  const userColumns = db.prepare('PRAGMA table_info(users)').all().map((column) => column.name);
+  if (!userColumns.includes('nullifier')) {
+    db.exec('ALTER TABLE users ADD COLUMN nullifier TEXT');
+    db.prepare('UPDATE users SET nullifier = user_hash WHERE nullifier IS NULL OR nullifier = ?').run('');
+  }
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_nullifier ON users(nullifier)');
+
   const magicTokenColumns = db.prepare('PRAGMA table_info(magic_tokens)').all().map((column) => column.name);
-  if (!magicTokenColumns.includes('subject_hash') || magicTokenColumns.includes('email')) {
+  if (!magicTokenColumns.includes('subject_hash') || !magicTokenColumns.includes('nullifier') || magicTokenColumns.includes('email')) {
     db.exec(`
       CREATE TABLE IF NOT EXISTS magic_tokens_v2 (
         token TEXT PRIMARY KEY,
         subject_hash TEXT NOT NULL,
+        nullifier TEXT NOT NULL,
         domain_group TEXT NOT NULL,
         expires_at INTEGER NOT NULL
       );
     `);
 
-    if (magicTokenColumns.includes('subject_hash')) {
+    if (magicTokenColumns.includes('subject_hash') && magicTokenColumns.includes('nullifier')) {
       db.exec(`
-        INSERT OR IGNORE INTO magic_tokens_v2 (token, subject_hash, domain_group, expires_at)
-        SELECT token, subject_hash, domain_group, expires_at FROM magic_tokens WHERE subject_hash IS NOT NULL;
+        INSERT OR IGNORE INTO magic_tokens_v2 (token, subject_hash, nullifier, domain_group, expires_at)
+        SELECT token, subject_hash, nullifier, domain_group, expires_at FROM magic_tokens
+        WHERE subject_hash IS NOT NULL AND nullifier IS NOT NULL;
       `);
     }
 
@@ -263,6 +275,7 @@ export function createStore(options = {}) {
   migrate(db);
 
   const users = new Map();
+  const nullifiers = new Map();
   const sessions = new Map();
   const magicTokens = new Map();
   const nicknames = new Map();
@@ -292,9 +305,10 @@ export function createStore(options = {}) {
 
   function persistUser(user) {
     db.prepare(`
-      INSERT INTO users (user_hash, nickname, domain_group, trust_level, roles, created_at, banned)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO users (user_hash, nullifier, nickname, domain_group, trust_level, roles, created_at, banned)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(user_hash) DO UPDATE SET
+        nullifier = excluded.nullifier,
         nickname = excluded.nickname,
         domain_group = excluded.domain_group,
         trust_level = excluded.trust_level,
@@ -302,6 +316,7 @@ export function createStore(options = {}) {
         banned = excluded.banned
     `).run(
       user.user_hash,
+      user.nullifier,
       user.nickname,
       user.domain_group,
       user.trust_level,
@@ -315,6 +330,7 @@ export function createStore(options = {}) {
     for (const row of db.prepare('SELECT * FROM users ORDER BY created_at').all()) {
       const user = rowToUser(row);
       users.set(user.user_hash, user);
+      nullifiers.set(user.nullifier, user.user_hash);
       if (user.nickname) {
         nicknames.set(user.nickname.toLowerCase(), user.user_hash);
       }
@@ -336,6 +352,7 @@ export function createStore(options = {}) {
     for (const row of db.prepare('SELECT * FROM magic_tokens').all()) {
       magicTokens.set(row.token, {
         subject_hash: row.subject_hash,
+        nullifier: row.nullifier,
         domain_group: row.domain_group,
         expires_at: row.expires_at
       });
@@ -388,6 +405,7 @@ export function createStore(options = {}) {
   return {
     db,
     users,
+    nullifiers,
     sessions,
     magicTokens,
     nicknames,
@@ -404,16 +422,17 @@ export function createStore(options = {}) {
 
     persistUser,
 
-    createMagicToken(subjectHash, domainGroup, ttlMs) {
+    createMagicToken(subjectHash, domainGroup, ttlMs, nullifier = subjectHash) {
       const token = nanoid(32);
       const record = {
         subject_hash: subjectHash,
+        nullifier,
         domain_group: domainGroup,
         expires_at: Date.now() + ttlMs
       };
       magicTokens.set(token, record);
-      db.prepare('INSERT INTO magic_tokens (token, subject_hash, domain_group, expires_at) VALUES (?, ?, ?, ?)')
-        .run(token, record.subject_hash, record.domain_group, record.expires_at);
+      db.prepare('INSERT INTO magic_tokens (token, subject_hash, nullifier, domain_group, expires_at) VALUES (?, ?, ?, ?, ?)')
+        .run(token, record.subject_hash, record.nullifier, record.domain_group, record.expires_at);
       return token;
     },
 
@@ -432,14 +451,25 @@ export function createStore(options = {}) {
       return record;
     },
 
-    upsertUser(userHash, domainGroup) {
+    upsertUser(userHash, domainGroup, nullifier = userHash) {
       const existing = users.get(userHash);
       if (existing) {
+        if (!existing.nullifier) {
+          existing.nullifier = nullifier;
+          nullifiers.set(nullifier, existing.user_hash);
+          persistUser(existing);
+        }
         return existing;
+      }
+
+      const existingHash = nullifiers.get(nullifier);
+      if (existingHash) {
+        return users.get(existingHash);
       }
 
       const user = {
         user_hash: userHash,
+        nullifier,
         nickname: null,
         domain_group: domainGroup,
         trust_level: 0,
@@ -448,6 +478,7 @@ export function createStore(options = {}) {
         banned: false
       };
       users.set(userHash, user);
+      nullifiers.set(nullifier, userHash);
       persistUser(user);
       return user;
     },

@@ -113,7 +113,8 @@ Goal: move beyond email-visible login toward stronger privacy-preserving members
 - [ ] Add OIDC minimal-claims prototype.
 - [ ] Research SAML support.
 - [ ] Research anonymous credentials / blind signatures.
-- [ ] Define duplicate-prevention model for anonymous credentials.
+- [x] Define duplicate-prevention model for anonymous credentials.
+- [x] Add community-scoped nullifier for duplicate prevention and ban persistence.
 - [ ] Define revocation model for anonymous credentials.
 - [x] Define speech-protection threat model.
 

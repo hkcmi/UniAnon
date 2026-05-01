@@ -73,6 +73,8 @@ DATABASE_PATH=data/unianon.sqlite
 REDIS_URL=
 SERVER_SECRET=replace-me-with-a-long-random-secret
 AUTH_SUBJECT_SECRET=replace-me-with-a-long-random-auth-subject-secret
+NULLIFIER_SECRET=replace-me-with-a-long-random-nullifier-secret
+COMMUNITY_ID=unianon-local
 MEMBERSHIP_ASSERTION_SECRET=replace-me-with-a-long-random-assertion-secret
 SESSION_TTL_MS=604800000
 ALLOWED_DOMAINS=example.edu,example.org,company.com
@@ -244,9 +246,10 @@ The local web UI also shows moderation tools to users with the `moderator` or `s
 ## Security Notes
 
 - Never expose `SERVER_SECRET`.
-- Use separate `AUTH_SUBJECT_SECRET` and `MEMBERSHIP_ASSERTION_SECRET` outside local demos.
+- Use separate `AUTH_SUBJECT_SECRET`, `NULLIFIER_SECRET`, and `MEMBERSHIP_ASSERTION_SECRET` outside local demos.
 - Do not store plaintext emails in the forum/content service.
-- Pending magic-token records store anonymous subject hashes, not plaintext email.
+- Pending magic-token records store anonymous subject hashes and community-scoped nullifiers, not plaintext email.
+- Nullifiers are private enforcement keys for one-account-per-member and ban persistence. They are not returned by public user APIs.
 - Session tokens are returned once to clients; SQLite stores only SHA-256 token hashes.
 - SQLite is intended for local MVP development. Production can move the same store boundary to PostgreSQL later.
 

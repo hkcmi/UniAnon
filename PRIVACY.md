@@ -15,10 +15,11 @@ Inside the community app:
 
 ```text
 subject_hash = HMAC_SHA256(email, auth_subject_secret)
-membership_assertion = sign({ subject_hash, domain_group, exp })
+nullifier = HMAC_SHA256(community_id + subject_hash, nullifier_secret)
+membership_assertion = sign({ subject_hash, nullifier, domain_group, exp })
 ```
 
-The Community Service uses the assertion subject as `user_hash`. This means admins and moderators can govern stable anonymous accounts without directly seeing the user's email address in normal community workflows.
+The Community Service uses the assertion subject as `user_hash` and stores `nullifier` as a private enforcement key. This means admins and moderators can govern stable anonymous accounts, prevent easy duplicate accounts, and preserve bans without directly seeing the user's email address in normal community workflows.
 
 ## What UniAnon Cannot Hide
 
@@ -38,7 +39,7 @@ This is a property of email delivery, not a bug in HMAC identity. HMAC protects 
 UniAnon separates three boundaries:
 
 1. Auth boundary: verifies email/domain and creates `user_hash`.
-2. Community boundary: stores content, nicknames, governance data, and moderation records.
+2. Community boundary: stores content, nicknames, governance data, moderation records, and community-scoped nullifiers.
 3. Email boundary: delivers login links to real inboxes.
 
 The strongest privacy posture is to keep the Auth and Email boundary small, audited, and separated from the Community boundary.

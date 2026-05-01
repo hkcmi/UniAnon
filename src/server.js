@@ -2,6 +2,7 @@ import express from 'express';
 import helmet from 'helmet';
 import { config } from './config.js';
 import {
+  createScopedNullifier,
   createUserHash,
   getDomain,
   isAllowedDomain,
@@ -264,6 +265,7 @@ app.post('/auth/request-link', async (req, res) => {
   }
 
   const subjectHash = createUserHash(email, config.authSubjectSecret);
+  const nullifier = createScopedNullifier(subjectHash, config.communityId, config.nullifierSecret);
   const emailAllowed = await enforceRateLimit(req, res, 'magicLinkEmail', subjectHash);
   if (!emailAllowed) {
     return;
@@ -274,7 +276,7 @@ app.post('/auth/request-link', async (req, res) => {
     return;
   }
 
-  const token = store.createMagicToken(subjectHash, getDomain(email), config.tokenTtlMs);
+  const token = store.createMagicToken(subjectHash, getDomain(email), config.tokenTtlMs, nullifier);
   const deliveryResult = await mailer.sendMagicLink(email, token);
   return res.status(201).json({
     ok: true,
@@ -290,10 +292,14 @@ app.post('/auth/verify', (req, res) => {
 
   const membershipAssertion = createMembershipAssertion({
     subjectHash: record.subject_hash,
-    domainGroup: record.domain_group
+    domainGroup: record.domain_group,
+    nullifier: record.nullifier
   });
-  const user = store.upsertUser(record.subject_hash, record.domain_group);
-  const sessionToken = store.createSession(record.subject_hash);
+  const user = store.upsertUser(record.subject_hash, record.domain_group, record.nullifier);
+  if (user.banned) {
+    return res.status(403).json({ error: 'user_banned' });
+  }
+  const sessionToken = store.createSession(user.user_hash);
 
   return res.json({
     session_token: sessionToken,
@@ -310,8 +316,11 @@ app.post('/auth/exchange', (req, res) => {
     return res.status(400).json({ error: 'invalid_or_expired_assertion' });
   }
 
-  const user = store.upsertUser(assertion.sub, assertion.domain_group);
-  const sessionToken = store.createSession(assertion.sub);
+  const user = store.upsertUser(assertion.sub, assertion.domain_group, assertion.nullifier);
+  if (user.banned) {
+    return res.status(403).json({ error: 'user_banned' });
+  }
+  const sessionToken = store.createSession(user.user_hash);
 
   return res.json({
     session_token: sessionToken,

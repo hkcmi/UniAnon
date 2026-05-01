@@ -8,7 +8,8 @@ import {
 test('creates and verifies signed membership assertions', () => {
   const assertion = createMembershipAssertion({
     subjectHash: 'subject-123',
-    domainGroup: 'example.edu'
+    domainGroup: 'example.edu',
+    nullifier: 'nullifier-123'
   }, {
     secret: 'test-secret',
     ttlMs: 60_000
@@ -17,12 +18,14 @@ test('creates and verifies signed membership assertions', () => {
   const payload = verifyMembershipAssertion(assertion, { secret: 'test-secret' });
   assert.equal(payload.sub, 'subject-123');
   assert.equal(payload.domain_group, 'example.edu');
+  assert.equal(payload.nullifier, 'nullifier-123');
 });
 
 test('rejects tampered membership assertions', () => {
   const assertion = createMembershipAssertion({
     subjectHash: 'subject-123',
-    domainGroup: 'example.edu'
+    domainGroup: 'example.edu',
+    nullifier: 'nullifier-123'
   }, {
     secret: 'test-secret',
     ttlMs: 60_000
@@ -35,7 +38,8 @@ test('rejects tampered membership assertions', () => {
 test('rejects expired membership assertions', () => {
   const assertion = createMembershipAssertion({
     subjectHash: 'subject-123',
-    domainGroup: 'example.edu'
+    domainGroup: 'example.edu',
+    nullifier: 'nullifier-123'
   }, {
     secret: 'test-secret',
     ttlMs: -1

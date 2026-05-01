@@ -25,6 +25,13 @@ export function createUserHash(email, serverSecret) {
   return crypto.createHmac('sha256', serverSecret).update(email).digest('hex');
 }
 
+export function createScopedNullifier(subjectHash, communityId, nullifierSecret) {
+  return crypto
+    .createHmac('sha256', nullifierSecret)
+    .update(`${communityId}:${subjectHash}`)
+    .digest('hex');
+}
+
 export function publicUser(user) {
   return {
     user_hash: user.user_hash,

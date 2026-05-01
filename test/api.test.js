@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
+import { createMembershipAssertion } from '../src/membership-assertion.js';
 import { app, store } from '../src/server.js';
 
 let baseUrl;
@@ -160,6 +161,78 @@ test('exchanges membership assertion without email', async () => {
   assert.equal(exchanged.user.user_hash, user.user_hash);
   assert.equal(exchanged.user.domain_group, 'example.edu');
   assert.equal(Object.hasOwn(exchanged.user, 'email'), false);
+  assert.equal(Object.hasOwn(exchanged.user, 'nullifier'), false);
+});
+
+test('prevents duplicate community accounts with the same nullifier', async () => {
+  const firstAssertion = createMembershipAssertion({
+    subjectHash: 'public-subject-a',
+    domainGroup: 'example.edu',
+    nullifier: 'shared-member-nullifier'
+  }, {
+    ttlMs: 60_000
+  });
+  const secondAssertion = createMembershipAssertion({
+    subjectHash: 'public-subject-b',
+    domainGroup: 'example.edu',
+    nullifier: 'shared-member-nullifier'
+  }, {
+    ttlMs: 60_000
+  });
+
+  const firstExchange = await fetch(`${baseUrl}/auth/exchange`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ membership_assertion: firstAssertion })
+  });
+  assert.equal(firstExchange.status, 200);
+  const first = await firstExchange.json();
+
+  const secondExchange = await fetch(`${baseUrl}/auth/exchange`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ membership_assertion: secondAssertion })
+  });
+  assert.equal(secondExchange.status, 200);
+  const second = await secondExchange.json();
+
+  assert.equal(second.user.user_hash, first.user.user_hash);
+  assert.equal(store.users.has('public-subject-b'), false);
+});
+
+test('rejects re-entry for a banned nullifier', async () => {
+  const firstAssertion = createMembershipAssertion({
+    subjectHash: 'banned-public-subject-a',
+    domainGroup: 'example.edu',
+    nullifier: 'banned-member-nullifier'
+  }, {
+    ttlMs: 60_000
+  });
+
+  const firstExchange = await fetch(`${baseUrl}/auth/exchange`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ membership_assertion: firstAssertion })
+  });
+  assert.equal(firstExchange.status, 200);
+  const first = await firstExchange.json();
+  store.banUser('system', first.user.user_hash, 'test ban');
+
+  const secondAssertion = createMembershipAssertion({
+    subjectHash: 'banned-public-subject-b',
+    domainGroup: 'example.edu',
+    nullifier: 'banned-member-nullifier'
+  }, {
+    ttlMs: 60_000
+  });
+
+  const secondExchange = await fetch(`${baseUrl}/auth/exchange`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ membership_assertion: secondAssertion })
+  });
+  assert.equal(secondExchange.status, 403);
+  assert.equal(store.users.has('banned-public-subject-b'), false);
 });
 
 test('rejects expired sessions', async () => {

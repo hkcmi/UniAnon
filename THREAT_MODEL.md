@@ -126,7 +126,7 @@ Implemented MVP step:
 magic token -> signed membership assertion -> community session
 ```
 
-The magic-token store keeps `subject_hash` and `domain_group`, not plaintext email.
+The magic-token store keeps `subject_hash`, `nullifier`, and `domain_group`, not plaintext email.
 
 Disallowed Community inputs:
 
@@ -162,6 +162,15 @@ Target mechanism:
 ```text
 nullifier = privacy-preserving stable identifier scoped to community_id
 ```
+
+Implemented MVP mechanism:
+
+```text
+subject_hash = HMAC_SHA256(email, auth_subject_secret)
+nullifier = HMAC_SHA256(community_id + subject_hash, nullifier_secret)
+```
+
+This is not the final anonymous-credential design because the Auth boundary can still derive the nullifier. It is still an important step: the Community boundary can enforce one account per member and make bans survive re-entry without storing email.
 
 Community stores:
 

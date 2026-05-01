@@ -8,6 +8,8 @@ export const config = {
   databasePath: process.env.DATABASE_PATH || (process.env.NODE_ENV === 'test' ? ':memory:' : 'data/unianon.sqlite'),
   serverSecret: process.env.SERVER_SECRET || 'dev-only-change-me',
   authSubjectSecret: process.env.AUTH_SUBJECT_SECRET || process.env.SERVER_SECRET || 'dev-only-change-me',
+  nullifierSecret: process.env.NULLIFIER_SECRET || process.env.SERVER_SECRET || 'dev-only-change-me',
+  communityId: process.env.COMMUNITY_ID || 'unianon-local',
   membershipAssertionSecret: process.env.MEMBERSHIP_ASSERTION_SECRET || process.env.SERVER_SECRET || 'dev-only-change-me',
   membershipAssertionTtlMs: Number(process.env.MEMBERSHIP_ASSERTION_TTL_MS || 5 * 60 * 1000),
   sessionTtlMs: Number(process.env.SESSION_TTL_MS || 7 * 24 * 60 * 60 * 1000),

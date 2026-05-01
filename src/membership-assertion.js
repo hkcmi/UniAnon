@@ -14,11 +14,12 @@ function sign(unsigned, secret) {
   return crypto.createHmac('sha256', secret).update(unsigned).digest('base64url');
 }
 
-export function createMembershipAssertion({ subjectHash, domainGroup }, options = {}) {
+export function createMembershipAssertion({ subjectHash, domainGroup, nullifier }, options = {}) {
   const now = Date.now();
   const payload = {
     typ: 'unianon.membership',
     sub: subjectHash,
+    nullifier,
     domain_group: domainGroup,
     iat: now,
     exp: now + (options.ttlMs || config.membershipAssertionTtlMs),
@@ -53,7 +54,7 @@ export function verifyMembershipAssertion(assertion, options = {}) {
     return null;
   }
 
-  if (!payload.sub || !payload.domain_group || payload.exp <= Date.now()) {
+  if (!payload.sub || !payload.nullifier || !payload.domain_group || payload.exp <= Date.now()) {
     return null;
   }
 

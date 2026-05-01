@@ -1,10 +1,11 @@
 import { config } from './config.js';
-import { createUserHash, getDomain, normalizeEmail } from './identity.js';
+import { createScopedNullifier, createUserHash, getDomain, normalizeEmail } from './identity.js';
 
 function ensureDemoUser(store, { email, nickname, trustLevel = 0, roles = [] }) {
   const normalizedEmail = normalizeEmail(email);
   const userHash = createUserHash(normalizedEmail, config.authSubjectSecret);
-  const user = store.upsertUser(userHash, getDomain(normalizedEmail));
+  const nullifier = createScopedNullifier(userHash, config.communityId, config.nullifierSecret);
+  const user = store.upsertUser(userHash, getDomain(normalizedEmail), nullifier);
 
   if (!user.nickname) {
     store.setNickname(user.user_hash, nickname);
