@@ -133,6 +133,21 @@ function rowToAuthEvent(row) {
   };
 }
 
+function rowToAppealCase(row) {
+  return {
+    id: row.id,
+    appellant_hash: row.appellant_hash,
+    target_type: row.target_type,
+    target_id: row.target_id,
+    reason: row.reason,
+    status: row.status,
+    votes: parseJson(row.votes, []),
+    created_at: row.created_at,
+    resolved_at: row.resolved_at,
+    resolution: parseJson(row.resolution, null)
+  };
+}
+
 function migrate(db) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
@@ -232,11 +247,25 @@ function migrate(db) {
       created_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS appeal_cases (
+      id TEXT PRIMARY KEY,
+      appellant_hash TEXT NOT NULL,
+      target_type TEXT NOT NULL,
+      target_id TEXT NOT NULL,
+      reason TEXT NOT NULL,
+      status TEXT NOT NULL,
+      votes TEXT NOT NULL DEFAULT '[]',
+      created_at TEXT NOT NULL,
+      resolved_at TEXT,
+      resolution TEXT
+    );
+
     CREATE INDEX IF NOT EXISTS idx_posts_space_id ON posts(space_id);
     CREATE INDEX IF NOT EXISTS idx_comments_post_id ON comments(post_id);
     CREATE INDEX IF NOT EXISTS idx_reports_target ON reports(target_type, target_id);
     CREATE INDEX IF NOT EXISTS idx_cases_target_status ON moderation_cases(target_type, target_id, status);
     CREATE INDEX IF NOT EXISTS idx_auth_events_email_digest ON auth_events(email_digest);
+    CREATE INDEX IF NOT EXISTS idx_appeal_cases_target_status ON appeal_cases(target_type, target_id, status);
   `);
 
   const sessionColumns = db.prepare('PRAGMA table_info(sessions)').all().map((column) => column.name);
@@ -307,6 +336,7 @@ export function createStore(options = {}) {
   const comments = new Map();
   const reports = new Map();
   const moderationCases = new Map();
+  const appealCases = new Map();
   const auditLog = [];
   const authEvents = [];
 
@@ -435,6 +465,11 @@ export function createStore(options = {}) {
       moderationCases.set(moderationCase.id, moderationCase);
     }
 
+    for (const row of db.prepare('SELECT * FROM appeal_cases ORDER BY created_at').all()) {
+      const appealCase = rowToAppealCase(row);
+      appealCases.set(appealCase.id, appealCase);
+    }
+
     for (const row of db.prepare('SELECT * FROM audit_log ORDER BY created_at').all()) {
       auditLog.push(rowToAuditEvent(row));
     }
@@ -458,6 +493,7 @@ export function createStore(options = {}) {
     comments,
     reports,
     moderationCases,
+    appealCases,
     auditLog,
     authEvents,
 
@@ -724,6 +760,59 @@ export function createStore(options = {}) {
       return moderationCase;
     },
 
+    findOpenAppealCase(appellantHash, targetType, targetId) {
+      return [...appealCases.values()].find((appealCase) => {
+        return appealCase.appellant_hash === appellantHash
+          && appealCase.target_type === targetType
+          && appealCase.target_id === targetId
+          && appealCase.status === 'open';
+      }) || null;
+    },
+
+    createAppealCase(appellantHash, targetType, targetId, reason) {
+      const appealCase = {
+        id: nanoid(16),
+        appellant_hash: appellantHash,
+        target_type: targetType,
+        target_id: targetId,
+        reason,
+        status: 'open',
+        votes: [],
+        created_at: new Date().toISOString(),
+        resolved_at: null,
+        resolution: null
+      };
+      appealCases.set(appealCase.id, appealCase);
+      db.prepare(`
+        INSERT INTO appeal_cases (
+          id, appellant_hash, target_type, target_id, reason, status, votes, created_at, resolved_at, resolution
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        appealCase.id,
+        appealCase.appellant_hash,
+        appealCase.target_type,
+        appealCase.target_id,
+        appealCase.reason,
+        appealCase.status,
+        JSON.stringify(appealCase.votes),
+        appealCase.created_at,
+        appealCase.resolved_at,
+        appealCase.resolution
+      );
+      addAuditEvent({
+        id: nanoid(16),
+        operation: 'appeal_opened',
+        actor_hash: appellantHash,
+        target_hash: targetType === 'user' ? targetId : null,
+        target_type: targetType,
+        target_id: targetId,
+        reason,
+        created_at: new Date().toISOString()
+      });
+      return appealCase;
+    },
+
     addCaseVote(caseId, voterHash, decision, action, weight) {
       const moderationCase = moderationCases.get(caseId);
       if (!moderationCase || moderationCase.status !== 'open') {
@@ -775,6 +864,56 @@ export function createStore(options = {}) {
       return moderationCase;
     },
 
+    addAppealVote(caseId, voterHash, decision, weight) {
+      const appealCase = appealCases.get(caseId);
+      if (!appealCase || appealCase.status !== 'open') {
+        return null;
+      }
+
+      if (appealCase.votes.some((vote) => vote.voter_hash === voterHash)) {
+        return { appealCase, duplicate: true };
+      }
+
+      appealCase.votes.push({
+        voter_hash: voterHash,
+        decision,
+        weight,
+        created_at: new Date().toISOString()
+      });
+      db.prepare('UPDATE appeal_cases SET votes = ? WHERE id = ?')
+        .run(JSON.stringify(appealCase.votes), appealCase.id);
+      return { appealCase, duplicate: false };
+    },
+
+    resolveAppealCase(caseId, resolution) {
+      const appealCase = appealCases.get(caseId);
+      if (!appealCase || appealCase.status !== 'open') {
+        return null;
+      }
+
+      appealCase.status = 'resolved';
+      appealCase.resolved_at = new Date().toISOString();
+      appealCase.resolution = resolution;
+      db.prepare('UPDATE appeal_cases SET status = ?, resolved_at = ?, resolution = ? WHERE id = ?')
+        .run(
+          appealCase.status,
+          appealCase.resolved_at,
+          JSON.stringify(appealCase.resolution),
+          appealCase.id
+        );
+      addAuditEvent({
+        id: nanoid(16),
+        operation: 'appeal_decision',
+        actor_hash: 'appeal_jury',
+        target_hash: appealCase.target_type === 'user' ? appealCase.target_id : appealCase.appellant_hash,
+        target_type: appealCase.target_type,
+        target_id: appealCase.target_id,
+        reason: resolution.reason,
+        created_at: appealCase.resolved_at
+      });
+      return appealCase;
+    },
+
     hideTarget(targetType, targetId) {
       if (targetType === 'post') {
         const post = posts.get(targetId);
@@ -799,6 +938,30 @@ export function createStore(options = {}) {
       return false;
     },
 
+    unhideTarget(targetType, targetId) {
+      if (targetType === 'post') {
+        const post = posts.get(targetId);
+        if (!post) {
+          return false;
+        }
+        post.hidden = false;
+        db.prepare('UPDATE posts SET hidden = 0 WHERE id = ?').run(targetId);
+        return true;
+      }
+
+      if (targetType === 'comment') {
+        const comment = comments.get(targetId);
+        if (!comment) {
+          return false;
+        }
+        comment.hidden = false;
+        db.prepare('UPDATE comments SET hidden = 0 WHERE id = ?').run(targetId);
+        return true;
+      }
+
+      return false;
+    },
+
     banUser(actorHash, targetHash, reason) {
       const target = users.get(targetHash);
       if (!target) {
@@ -810,6 +973,25 @@ export function createStore(options = {}) {
       addAuditEvent({
         id: nanoid(16),
         operation: 'ban',
+        actor_hash: actorHash,
+        target_hash: targetHash,
+        reason,
+        created_at: new Date().toISOString()
+      });
+      return true;
+    },
+
+    unbanUser(actorHash, targetHash, reason) {
+      const target = users.get(targetHash);
+      if (!target) {
+        return false;
+      }
+
+      target.banned = false;
+      persistUser(target);
+      addAuditEvent({
+        id: nanoid(16),
+        operation: 'unban',
         actor_hash: actorHash,
         target_hash: targetHash,
         reason,

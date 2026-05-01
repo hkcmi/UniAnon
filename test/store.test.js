@@ -23,6 +23,8 @@ test('persists core community data across store restarts', () => {
     success: true,
     reason: 'sent'
   });
+  const appealCase = firstStore.createAppealCase(user.user_hash, 'user', user.user_hash, 'Please review.');
+  firstStore.addAppealVote(appealCase.id, 'juror-hash', 'approve', 3);
   firstStore.close();
 
   const secondStore = createStore({ databasePath });
@@ -32,6 +34,7 @@ test('persists core community data across store restarts', () => {
   assert.equal(secondStore.posts.get(post.id).content, 'This post should survive restart.');
   assert.equal([...secondStore.comments.values()][0].content, 'So should this comment.');
   assert.equal(secondStore.authEvents[0].email_digest, 'a'.repeat(64));
+  assert.equal(secondStore.appealCases.get(appealCase.id).votes[0].decision, 'approve');
   secondStore.close();
 
   fs.rmSync(dir, { recursive: true, force: true });

@@ -230,6 +230,33 @@ Supported decisions: `violation`, `dismiss`.
 
 Supported actions: `hide_content`, `ban_user`, `none`.
 
+### `POST /appeals`
+
+Open an appeal for a banned user or hidden post/comment. Active users can use a bearer session. Banned users can submit the `membership_assertion` returned by `/auth/verify` when login is denied with `user_banned`.
+
+```json
+{
+  "membership_assertion": "signed-assertion-for-banned-users",
+  "target_type": "user",
+  "target_id": "target-user-hash",
+  "reason": "Please review this action."
+}
+```
+
+### `GET /appeals`
+
+List appeal cases. Requires a trusted user with `trust_level >= 2`.
+
+### `POST /appeals/:appealId/votes`
+
+Submit an appeal jury vote. Requires a trusted user with `trust_level >= 2`.
+
+```json
+{ "decision": "approve" }
+```
+
+Supported decisions: `approve`, `dismiss`.
+
 ### `POST /moderation/ban`
 
 Ban a user hash. Requires a moderator session.

@@ -191,6 +191,7 @@ domain_group
 nickname
 trust_level
 banned
+appeal case metadata
 ```
 
 Community does not store:
@@ -216,6 +217,10 @@ But:
 ```text
 nullifier must not reveal email
 ```
+
+### Appeal Without Email Exposure
+
+Banned users cannot receive a normal community session, but they can still prove membership and open an appeal. When `/auth/verify` detects a banned user, it returns a signed membership assertion instead of a session. The appeal endpoint accepts that assertion and opens an `appeal_case` without storing plaintext email.
 
 ## Acceptable Privacy Modes
 

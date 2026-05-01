@@ -22,6 +22,8 @@ membership_assertion = sign({ subject_hash, nullifier, domain_group, exp })
 
 The Community Service uses the assertion subject as `user_hash` and stores `nullifier` as a private enforcement key. This means admins and moderators can govern stable anonymous accounts, prevent easy duplicate accounts, and preserve bans without directly seeing the user's email address in normal community workflows.
 
+Banned users do not receive a normal session. They may receive a signed membership assertion so they can open an appeal without revealing or storing plaintext email in the Community Service.
+
 ## What UniAnon Cannot Hide
 
 If UniAnon sends a magic link to `person@example.edu`, the email delivery path necessarily sees that recipient address.

@@ -353,6 +353,71 @@ test('opens a moderation case from weighted reports and resolves by jury vote', 
   assert.equal(store.auditLog.some((event) => event.operation === 'jury_decision'), true);
 });
 
+test('allows banned users to appeal with a membership assertion', async () => {
+  const target = await signup('appeal-target@example.edu', 'appeal_target');
+  const juror = await signup('appeal-juror@example.edu', 'appeal_juror');
+  const jurorUser = store.users.get(juror.user.user_hash);
+  jurorUser.trust_level = 2;
+  store.persistUser(jurorUser);
+
+  store.banUser('system', target.user.user_hash, 'appeal test ban');
+
+  const requestLink = await fetch(`${baseUrl}/auth/request-link`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email: 'appeal-target@example.edu' })
+  });
+  assert.equal(requestLink.status, 201);
+  const { token } = await requestLink.json();
+
+  const verify = await fetch(`${baseUrl}/auth/verify`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ token })
+  });
+  assert.equal(verify.status, 403);
+  const bannedLogin = await verify.json();
+  assert.equal(bannedLogin.error, 'user_banned');
+  assert.equal(typeof bannedLogin.membership_assertion, 'string');
+
+  const appealResponse = await fetch(`${baseUrl}/appeals`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      membership_assertion: bannedLogin.membership_assertion,
+      target_type: 'user',
+      target_id: target.user.user_hash,
+      reason: 'The ban should be reviewed.'
+    })
+  });
+  assert.equal(appealResponse.status, 201);
+  const appealResult = await appealResponse.json();
+  assert.equal(appealResult.appeal.status, 'open');
+
+  const listAppeals = await fetch(`${baseUrl}/appeals`, {
+    headers: { authorization: `Bearer ${juror.sessionToken}` }
+  });
+  assert.equal(listAppeals.status, 200);
+  const { appeals } = await listAppeals.json();
+  assert.equal(appeals.some((appeal) => appeal.id === appealResult.appeal.id), true);
+
+  const voteResponse = await fetch(`${baseUrl}/appeals/${appealResult.appeal.id}/votes`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${juror.sessionToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({ decision: 'approve' })
+  });
+  assert.equal(voteResponse.status, 201);
+  const voteResult = await voteResponse.json();
+  assert.equal(voteResult.appeal.status, 'resolved');
+  assert.equal(voteResult.appeal.resolution.action, 'restore_access');
+  assert.equal(store.users.get(target.user.user_hash).banned, false);
+  assert.equal(store.auditLog.some((event) => event.operation === 'appeal_decision'), true);
+  assert.equal(store.auditLog.some((event) => event.operation === 'unban'), true);
+});
+
 test('restricts spaces by allowed email domain', async () => {
   const moderator = await signup('space-mod@example.edu', 'space_mod');
   const eduUser = await signup('space-edu@example.edu', 'space_edu');

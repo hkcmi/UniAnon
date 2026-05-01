@@ -151,6 +151,28 @@ function serializeCase(moderationCase) {
   };
 }
 
+function serializeAppealCase(appealCase) {
+  const approveWeight = appealCase.votes
+    .filter((vote) => vote.decision === 'approve')
+    .reduce((sum, vote) => sum + vote.weight, 0);
+  const dismissWeight = appealCase.votes
+    .filter((vote) => vote.decision === 'dismiss')
+    .reduce((sum, vote) => sum + vote.weight, 0);
+
+  return {
+    id: appealCase.id,
+    appellant_hash: appealCase.appellant_hash,
+    target_type: appealCase.target_type,
+    target_id: appealCase.target_id,
+    status: appealCase.status,
+    approve_weight: approveWeight,
+    dismiss_weight: dismissWeight,
+    created_at: appealCase.created_at,
+    resolved_at: appealCase.resolved_at,
+    resolution: appealCase.resolution
+  };
+}
+
 function validateContent(content) {
   if (typeof content !== 'string') {
     return null;
@@ -208,10 +230,82 @@ function findReportTarget(targetType, targetId) {
   return null;
 }
 
+function findAppealTarget(targetType, targetId) {
+  if (targetType === 'user') {
+    const user = store.users.get(targetId);
+    return user && user.banned ? { ownerHash: user.user_hash, punished: true } : null;
+  }
+
+  if (targetType === 'post') {
+    const post = store.posts.get(targetId);
+    return post && post.hidden ? { ownerHash: post.user_hash, punished: true } : null;
+  }
+
+  if (targetType === 'comment') {
+    const comment = store.comments.get(targetId);
+    return comment && comment.hidden ? { ownerHash: comment.user_hash, punished: true } : null;
+  }
+
+  return null;
+}
+
+function findBearerUser(req) {
+  const header = req.get('authorization') || '';
+  const token = header.startsWith('Bearer ') ? header.slice('Bearer '.length) : null;
+  return token ? store.findSession(token) : null;
+}
+
+function authenticateAppealActor(req) {
+  const sessionUser = findBearerUser(req);
+  if (sessionUser) {
+    return sessionUser;
+  }
+
+  const assertion = verifyMembershipAssertion(req.body.membership_assertion);
+  if (!assertion) {
+    return null;
+  }
+
+  return store.upsertUser(assertion.sub, assertion.domain_group, assertion.nullifier);
+}
+
 function caseApprovalThreshold(moderationCase) {
   const accused = store.users.get(moderationCase.accused_hash);
   const protectedRole = accused?.roles.includes('moderator') || accused?.roles.includes('system_admin');
   return protectedRole ? config.adminProtectionApprovalWeight : config.juryApprovalWeight;
+}
+
+function maybeResolveAppealCase(appealCase) {
+  const approveWeight = appealCase.votes
+    .filter((vote) => vote.decision === 'approve')
+    .reduce((sum, vote) => sum + vote.weight, 0);
+  const dismissWeight = appealCase.votes
+    .filter((vote) => vote.decision === 'dismiss')
+    .reduce((sum, vote) => sum + vote.weight, 0);
+
+  if (dismissWeight >= config.juryApprovalWeight) {
+    return store.resolveAppealCase(appealCase.id, {
+      decision: 'dismiss',
+      action: 'none',
+      reason: 'appeal jury dismissed the appeal'
+    });
+  }
+
+  if (approveWeight < config.juryApprovalWeight) {
+    return appealCase;
+  }
+
+  if (appealCase.target_type === 'user') {
+    store.unbanUser('appeal_jury', appealCase.target_id, 'appeal approved restore access');
+  } else {
+    store.unhideTarget(appealCase.target_type, appealCase.target_id);
+  }
+
+  return store.resolveAppealCase(appealCase.id, {
+    decision: 'approve',
+    action: appealCase.target_type === 'user' ? 'restore_access' : 'restore_content',
+    reason: 'appeal jury approved the appeal'
+  });
 }
 
 function maybeResolveCase(moderationCase) {
@@ -333,7 +427,11 @@ app.post('/auth/verify', (req, res) => {
   });
   const user = store.upsertUser(record.subject_hash, record.domain_group, record.nullifier);
   if (user.banned) {
-    return res.status(403).json({ error: 'user_banned' });
+    return res.status(403).json({
+      error: 'user_banned',
+      membership_assertion: membershipAssertion,
+      user: publicUser(user)
+    });
   }
   const sessionToken = store.createSession(user.user_hash);
 
@@ -581,6 +679,90 @@ app.post('/governance/cases/:caseId/votes', requireAuth, requireTrustedJuror, as
 
   const resolvedCase = maybeResolveCase(result.moderationCase);
   return res.status(201).json({ case: serializeCase(resolvedCase) });
+});
+
+app.post('/appeals', (req, res) => {
+  const appellant = authenticateAppealActor(req);
+  if (!appellant) {
+    return res.status(401).json({ error: 'authentication_required' });
+  }
+
+  const targetType = req.body.target_type;
+  const targetId = typeof req.body.target_id === 'string' ? req.body.target_id : '';
+  const reason = validateContent(req.body.reason);
+
+  if (!['user', 'post', 'comment'].includes(targetType)) {
+    return res.status(400).json({ error: 'invalid_target_type' });
+  }
+
+  if (!reason) {
+    return res.status(400).json({ error: 'invalid_reason' });
+  }
+
+  const target = findAppealTarget(targetType, targetId);
+  if (!target) {
+    return res.status(404).json({ error: 'appealable_target_not_found' });
+  }
+
+  if (target.ownerHash !== appellant.user_hash) {
+    return res.status(403).json({ error: 'cannot_appeal_other_user_target' });
+  }
+
+  const existing = store.findOpenAppealCase(appellant.user_hash, targetType, targetId);
+  if (existing) {
+    return res.status(409).json({ error: 'duplicate_appeal', appeal_id: existing.id });
+  }
+
+  const appealCase = store.createAppealCase(appellant.user_hash, targetType, targetId, reason);
+  return res.status(201).json({ appeal: serializeAppealCase(appealCase) });
+});
+
+app.get('/appeals', requireAuth, requireTrustedJuror, (req, res) => {
+  const appeals = [...store.appealCases.values()]
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    .map(serializeAppealCase);
+
+  res.json({ appeals });
+});
+
+app.post('/appeals/:appealId/votes', requireAuth, requireTrustedJuror, async (req, res) => {
+  const decision = req.body.decision;
+
+  if (!['approve', 'dismiss'].includes(decision)) {
+    return res.status(400).json({ error: 'invalid_decision' });
+  }
+
+  const appealCase = store.appealCases.get(req.params.appealId);
+  if (!appealCase) {
+    return res.status(404).json({ error: 'appeal_not_found' });
+  }
+
+  if (appealCase.appellant_hash === req.user.user_hash) {
+    return res.status(400).json({ error: 'cannot_vote_on_own_appeal' });
+  }
+
+  const allowed = await enforceRateLimit(req, res, 'juryVote', req.user.user_hash);
+  if (!allowed) {
+    return;
+  }
+
+  const result = store.addAppealVote(
+    appealCase.id,
+    req.user.user_hash,
+    decision,
+    trustWeight(req.user)
+  );
+
+  if (!result) {
+    return res.status(409).json({ error: 'appeal_not_open' });
+  }
+
+  if (result.duplicate) {
+    return res.status(409).json({ error: 'duplicate_vote' });
+  }
+
+  const resolvedAppeal = maybeResolveAppealCase(result.appealCase);
+  return res.status(201).json({ appeal: serializeAppealCase(resolvedAppeal) });
 });
 
 app.post('/moderation/ban', requireAuth, requireModerator, (req, res) => {

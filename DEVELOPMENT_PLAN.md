@@ -72,7 +72,7 @@ Goal: make the MVP harder to abuse and closer to real community use.
 - [x] Add secure session storage.
 - [ ] Add stronger validation for content and nicknames.
 - [ ] Add moderator action safeguards.
-- [ ] Add appeal case model.
+- [x] Add appeal case model.
 - [ ] Add user-facing error messages.
 
 ## Phase 3: Reputation and Governance
@@ -88,7 +88,7 @@ Goal: make governance more complete and closer to the project specification.
 - [ ] Prevent jury conflicts of interest.
 - [ ] Add administrator protection thresholds.
 - [ ] Add multi-party approval for high-impact actions.
-- [ ] Add appeal workflow.
+- [x] Add appeal workflow.
 - [ ] Add transparent audit views.
 
 ## Phase 4: Email and Auth Productionization
