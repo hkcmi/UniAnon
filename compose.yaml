@@ -9,6 +9,7 @@ services:
       REDIS_URL: redis://redis:6379
       SERVER_SECRET: ${SERVER_SECRET:-dev-only-change-me}
       AUTH_SUBJECT_SECRET: ${AUTH_SUBJECT_SECRET:-dev-only-change-me}
+      AUTH_LOG_SECRET: ${AUTH_LOG_SECRET:-dev-only-change-me}
       NULLIFIER_SECRET: ${NULLIFIER_SECRET:-dev-only-change-me}
       COMMUNITY_ID: ${COMMUNITY_ID:-unianon-local}
       MEMBERSHIP_ASSERTION_SECRET: ${MEMBERSHIP_ASSERTION_SECRET:-dev-only-change-me}

@@ -121,6 +121,18 @@ function rowToAuditEvent(row) {
   };
 }
 
+function rowToAuthEvent(row) {
+  return {
+    id: row.id,
+    event_type: row.event_type,
+    email_digest: row.email_digest,
+    domain_group: row.domain_group,
+    success: boolFromDb(row.success),
+    reason: row.reason,
+    created_at: row.created_at
+  };
+}
+
 function migrate(db) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
@@ -210,10 +222,21 @@ function migrate(db) {
       created_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS auth_events (
+      id TEXT PRIMARY KEY,
+      event_type TEXT NOT NULL,
+      email_digest TEXT,
+      domain_group TEXT,
+      success INTEGER NOT NULL DEFAULT 0,
+      reason TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+
     CREATE INDEX IF NOT EXISTS idx_posts_space_id ON posts(space_id);
     CREATE INDEX IF NOT EXISTS idx_comments_post_id ON comments(post_id);
     CREATE INDEX IF NOT EXISTS idx_reports_target ON reports(target_type, target_id);
     CREATE INDEX IF NOT EXISTS idx_cases_target_status ON moderation_cases(target_type, target_id, status);
+    CREATE INDEX IF NOT EXISTS idx_auth_events_email_digest ON auth_events(email_digest);
   `);
 
   const sessionColumns = db.prepare('PRAGMA table_info(sessions)').all().map((column) => column.name);
@@ -285,6 +308,7 @@ export function createStore(options = {}) {
   const reports = new Map();
   const moderationCases = new Map();
   const auditLog = [];
+  const authEvents = [];
 
   function addAuditEvent(event) {
     auditLog.push(event);
@@ -298,6 +322,22 @@ export function createStore(options = {}) {
       event.target_hash || null,
       event.target_type || null,
       event.target_id || null,
+      event.reason,
+      event.created_at
+    );
+  }
+
+  function addAuthEvent(event) {
+    authEvents.push(event);
+    db.prepare(`
+      INSERT INTO auth_events (id, event_type, email_digest, domain_group, success, reason, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      event.id,
+      event.event_type,
+      event.email_digest || null,
+      event.domain_group || null,
+      boolToDb(event.success),
       event.reason,
       event.created_at
     );
@@ -398,6 +438,10 @@ export function createStore(options = {}) {
     for (const row of db.prepare('SELECT * FROM audit_log ORDER BY created_at').all()) {
       auditLog.push(rowToAuditEvent(row));
     }
+
+    for (const row of db.prepare('SELECT * FROM auth_events ORDER BY created_at').all()) {
+      authEvents.push(rowToAuthEvent(row));
+    }
   }
 
   load();
@@ -415,12 +459,27 @@ export function createStore(options = {}) {
     reports,
     moderationCases,
     auditLog,
+    authEvents,
 
     close() {
       db.close();
     },
 
     persistUser,
+
+    logAuthEvent({ eventType, emailDigest, domainGroup = null, success, reason }) {
+      const event = {
+        id: nanoid(16),
+        event_type: eventType,
+        email_digest: emailDigest,
+        domain_group: domainGroup,
+        success,
+        reason,
+        created_at: new Date().toISOString()
+      };
+      addAuthEvent(event);
+      return event;
+    },
 
     createMagicToken(subjectHash, domainGroup, ttlMs, nullifier = subjectHash) {
       const token = nanoid(32);

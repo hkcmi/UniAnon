@@ -107,7 +107,7 @@ Goal: replace dev-only magic token responses with real email delivery.
 
 Goal: move beyond email-visible login toward stronger privacy-preserving membership proofs.
 
-- [ ] Add auth event logging with email redaction.
+- [x] Add auth event logging with email redaction.
 - [ ] Split Auth Service and Community Service design.
 - [x] Define signed membership assertion format.
 - [ ] Add OIDC minimal-claims prototype.

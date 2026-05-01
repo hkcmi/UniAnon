@@ -147,6 +147,17 @@ domain_group=example.edu
 email_digest=HMAC(email, auth_log_secret)
 ```
 
+Implemented MVP auth events store:
+
+```text
+event_type
+email_digest
+domain_group
+success
+reason
+created_at
+```
+
 Disallowed:
 
 ```text

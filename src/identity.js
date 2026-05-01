@@ -25,6 +25,10 @@ export function createUserHash(email, serverSecret) {
   return crypto.createHmac('sha256', serverSecret).update(email).digest('hex');
 }
 
+export function createEmailDigest(email, authLogSecret) {
+  return crypto.createHmac('sha256', authLogSecret).update(email).digest('hex');
+}
+
 export function createScopedNullifier(subjectHash, communityId, nullifierSecret) {
   return crypto
     .createHmac('sha256', nullifierSecret)

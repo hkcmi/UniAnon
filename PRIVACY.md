@@ -11,6 +11,7 @@ Inside the community app:
 - Governance cases use `user_hash`, not email addresses.
 - The forum/content database does not need plaintext email addresses.
 - Session tokens are stored as SHA-256 hashes.
+- Auth events store `email_digest = HMAC_SHA256(email, auth_log_secret)`, not plaintext email.
 - Community identity is derived from a signed membership assertion subject:
 
 ```text

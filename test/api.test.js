@@ -277,6 +277,25 @@ test('stores no plaintext email in magic token records', () => {
   }
 });
 
+test('stores auth events with redacted email digests only', async () => {
+  const response = await fetch(`${baseUrl}/auth/request-link`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email: 'auth-log@example.edu' })
+  });
+  assert.equal(response.status, 201);
+
+  const columns = store.db.prepare('PRAGMA table_info(auth_events)').all().map((column) => column.name);
+  assert.equal(columns.includes('email'), false);
+  assert.equal(columns.includes('email_digest'), true);
+
+  const event = store.authEvents.find((candidate) => candidate.domain_group === 'example.edu' && candidate.reason === 'sent');
+  assert.notEqual(event, undefined);
+  assert.match(event.email_digest, /^[a-f0-9]{64}$/);
+  assert.equal(event.email_digest.includes('auth-log@example.edu'), false);
+  assert.equal(Object.hasOwn(event, 'email'), false);
+});
+
 test('opens a moderation case from weighted reports and resolves by jury vote', async () => {
   const accused = await signup('accused@example.edu', 'case_accused');
   const reporter = await signup('reporter@example.edu', 'case_reporter');

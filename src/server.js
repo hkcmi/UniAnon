@@ -2,6 +2,7 @@ import express from 'express';
 import helmet from 'helmet';
 import { config } from './config.js';
 import {
+  createEmailDigest,
   createScopedNullifier,
   createUserHash,
   getDomain,
@@ -257,10 +258,24 @@ app.get('/health', (req, res) => {
 app.post('/auth/request-link', async (req, res) => {
   const email = normalizeEmail(req.body.email);
   if (!email) {
+    store.logAuthEvent({
+      eventType: 'magic_link_requested',
+      success: false,
+      reason: 'invalid_email'
+    });
     return res.status(400).json({ error: 'invalid_email' });
   }
 
+  const domainGroup = getDomain(email);
+  const emailDigest = createEmailDigest(email, config.authLogSecret);
   if (!isAllowedDomain(email, config.allowedDomains)) {
+    store.logAuthEvent({
+      eventType: 'magic_link_requested',
+      emailDigest,
+      domainGroup,
+      success: false,
+      reason: 'domain_not_allowed'
+    });
     return res.status(403).json({ error: 'domain_not_allowed' });
   }
 
@@ -268,16 +283,37 @@ app.post('/auth/request-link', async (req, res) => {
   const nullifier = createScopedNullifier(subjectHash, config.communityId, config.nullifierSecret);
   const emailAllowed = await enforceRateLimit(req, res, 'magicLinkEmail', subjectHash);
   if (!emailAllowed) {
+    store.logAuthEvent({
+      eventType: 'magic_link_requested',
+      emailDigest,
+      domainGroup,
+      success: false,
+      reason: 'email_rate_limited'
+    });
     return;
   }
 
   const ipAllowed = await enforceRateLimit(req, res, 'magicLinkIp', req.ip);
   if (!ipAllowed) {
+    store.logAuthEvent({
+      eventType: 'magic_link_requested',
+      emailDigest,
+      domainGroup,
+      success: false,
+      reason: 'ip_rate_limited'
+    });
     return;
   }
 
-  const token = store.createMagicToken(subjectHash, getDomain(email), config.tokenTtlMs, nullifier);
+  const token = store.createMagicToken(subjectHash, domainGroup, config.tokenTtlMs, nullifier);
   const deliveryResult = await mailer.sendMagicLink(email, token);
+  store.logAuthEvent({
+    eventType: 'magic_link_requested',
+    emailDigest,
+    domainGroup,
+    success: true,
+    reason: 'sent'
+  });
   return res.status(201).json({
     ok: true,
     ...deliveryResult

@@ -16,6 +16,13 @@ test('persists core community data across store restarts', () => {
   const space = firstStore.createSpace('Persistent Space', ['example.edu']);
   const post = firstStore.createPost(user.user_hash, space.id, 'This post should survive restart.');
   firstStore.createComment(post.id, user.user_hash, 'So should this comment.');
+  firstStore.logAuthEvent({
+    eventType: 'magic_link_requested',
+    emailDigest: 'a'.repeat(64),
+    domainGroup: 'example.edu',
+    success: true,
+    reason: 'sent'
+  });
   firstStore.close();
 
   const secondStore = createStore({ databasePath });
@@ -24,6 +31,7 @@ test('persists core community data across store restarts', () => {
   assert.equal(secondStore.spaces.get(space.id).name, 'Persistent Space');
   assert.equal(secondStore.posts.get(post.id).content, 'This post should survive restart.');
   assert.equal([...secondStore.comments.values()][0].content, 'So should this comment.');
+  assert.equal(secondStore.authEvents[0].email_digest, 'a'.repeat(64));
   secondStore.close();
 
   fs.rmSync(dir, { recursive: true, force: true });
