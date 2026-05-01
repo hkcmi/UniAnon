@@ -69,6 +69,7 @@ Useful environment variables:
 ```bash
 PORT=3000
 DATABASE_PATH=data/unianon.sqlite
+REDIS_URL=
 SERVER_SECRET=replace-me-with-a-long-random-secret
 ALLOWED_DOMAINS=example.edu,example.org,company.com
 REPORT_WEIGHT_THRESHOLD=3
@@ -79,6 +80,8 @@ ADMIN_PROTECTION_APPROVAL_WEIGHT=8
 For local development, `/auth/request-link` returns the verification token in the response. In production, this should be sent by an email provider and never returned to the client.
 
 By default, local data is stored in `data/unianon.sqlite`. Tests use an in-memory SQLite database.
+
+Rate limits use an in-memory store by default. Set `REDIS_URL` to use Redis-backed counters.
 
 ## Docker
 
@@ -105,7 +108,7 @@ Stop the app:
 docker compose down
 ```
 
-SQLite data is stored in the `unianon-data` Docker volume.
+SQLite data is stored in the `unianon-data` Docker volume. Docker Compose also starts Redis for rate limiting.
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for the full local deployment guide.
 

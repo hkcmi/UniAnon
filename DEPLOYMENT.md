@@ -31,6 +31,7 @@ Important variables:
 ```bash
 PORT=3000
 DATABASE_PATH=data/unianon.sqlite
+REDIS_URL=
 SERVER_SECRET=replace-me-with-a-long-random-secret
 ALLOWED_DOMAINS=example.edu,example.org,company.com
 MAGIC_TOKEN_TTL_MS=900000
@@ -59,6 +60,12 @@ Open:
 
 ```text
 http://localhost:3000
+```
+
+Docker Compose starts both the app and Redis. The app uses Redis for rate-limit counters through:
+
+```bash
+REDIS_URL=redis://redis:6379
 ```
 
 Seed demo data:
@@ -128,6 +135,11 @@ Docker Compose run:
 unianon-data Docker volume mounted at /app/data
 ```
 
+Rate-limit storage:
+
+- Npm local run without `REDIS_URL`: in-memory counters.
+- Docker Compose: Redis counters.
+
 The app loads SQLite records into memory at startup and writes changes back to SQLite during API operations. If an external script changes the database while the app is running, restart the app.
 
 ## Demo Accounts
@@ -186,7 +198,7 @@ docker compose up --build
 - Magic links are dev-only and returned in API responses.
 - There is no real SMTP provider yet.
 - Sessions do not expire yet.
-- Redis rate limiting is not implemented yet.
+- Redis rate limiting is implemented for key write paths, but policy tuning is still early.
 - SQLite is intended for local MVP use.
 - The current app is a standalone MVP, not a NodeBB plugin yet.
 

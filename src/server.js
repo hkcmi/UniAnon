@@ -8,9 +8,11 @@ import {
   normalizeEmail,
   publicUser
 } from './identity.js';
+import { createRateLimiter } from './rate-limit.js';
 import { createStore } from './store.js';
 
 export const store = createStore();
+export const rateLimiter = createRateLimiter();
 export const app = express();
 
 app.use(helmet());
@@ -65,6 +67,24 @@ function requireTrustedJuror(req, res, next) {
 
 function trustWeight(user) {
   return Math.min(user.trust_level + 1, 4);
+}
+
+async function enforceRateLimit(req, res, limitName, subject) {
+  const result = await rateLimiter.consume(limitName, subject);
+  res.set('X-RateLimit-Limit', String(result.max));
+  res.set('X-RateLimit-Remaining', String(result.remaining));
+
+  if (result.allowed) {
+    return true;
+  }
+
+  res.set('Retry-After', String(result.retry_after));
+  res.status(429).json({
+    error: 'rate_limited',
+    limit: limitName,
+    retry_after: result.retry_after
+  });
+  return false;
 }
 
 function serializePost(post) {
@@ -230,7 +250,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-app.post('/auth/request-link', (req, res) => {
+app.post('/auth/request-link', async (req, res) => {
   const email = normalizeEmail(req.body.email);
   if (!email) {
     return res.status(400).json({ error: 'invalid_email' });
@@ -238,6 +258,16 @@ app.post('/auth/request-link', (req, res) => {
 
   if (!isAllowedDomain(email, config.allowedDomains)) {
     return res.status(403).json({ error: 'domain_not_allowed' });
+  }
+
+  const emailAllowed = await enforceRateLimit(req, res, 'magicLinkEmail', email);
+  if (!emailAllowed) {
+    return;
+  }
+
+  const ipAllowed = await enforceRateLimit(req, res, 'magicLinkIp', req.ip);
+  if (!ipAllowed) {
+    return;
   }
 
   const token = store.createMagicToken(email, getDomain(email), config.tokenTtlMs);
@@ -310,10 +340,15 @@ app.post('/users/nickname', requireAuth, (req, res) => {
   return res.status(201).json({ user: publicUser(req.user) });
 });
 
-app.post('/posts', requireAuth, requireNickname, (req, res) => {
+app.post('/posts', requireAuth, requireNickname, async (req, res) => {
   const content = validateContent(req.body.content);
   if (!content) {
     return res.status(400).json({ error: 'invalid_content' });
+  }
+
+  const allowed = await enforceRateLimit(req, res, 'postCreate', req.user.user_hash);
+  if (!allowed) {
+    return;
   }
 
   const spaceId = typeof req.body.space_id === 'string' ? req.body.space_id : 'public';
@@ -338,7 +373,7 @@ app.get('/posts', optionalAuth, (req, res) => {
   res.json({ posts: visiblePosts });
 });
 
-app.post('/posts/:postId/comments', requireAuth, requireNickname, (req, res) => {
+app.post('/posts/:postId/comments', requireAuth, requireNickname, async (req, res) => {
   const post = store.posts.get(req.params.postId);
   if (!post || post.hidden) {
     return res.status(404).json({ error: 'post_not_found' });
@@ -347,6 +382,11 @@ app.post('/posts/:postId/comments', requireAuth, requireNickname, (req, res) => 
   const content = validateContent(req.body.content);
   if (!content) {
     return res.status(400).json({ error: 'invalid_content' });
+  }
+
+  const allowed = await enforceRateLimit(req, res, 'commentCreate', req.user.user_hash);
+  if (!allowed) {
+    return;
   }
 
   const comment = store.createComment(post.id, req.user.user_hash, content);
@@ -361,7 +401,7 @@ app.post('/posts/:postId/comments', requireAuth, requireNickname, (req, res) => 
   });
 });
 
-app.post('/reports', requireAuth, requireNickname, (req, res) => {
+app.post('/reports', requireAuth, requireNickname, async (req, res) => {
   const targetType = req.body.target_type;
   const targetId = typeof req.body.target_id === 'string' ? req.body.target_id : '';
   const reason = validateContent(req.body.reason) || 'No reason provided';
@@ -377,6 +417,11 @@ app.post('/reports', requireAuth, requireNickname, (req, res) => {
 
   if (target.accusedHash === req.user.user_hash) {
     return res.status(400).json({ error: 'cannot_report_self' });
+  }
+
+  const allowed = await enforceRateLimit(req, res, 'reportCreate', req.user.user_hash);
+  if (!allowed) {
+    return;
   }
 
   const { report, duplicate } = store.createReport(
@@ -421,7 +466,7 @@ app.get('/governance/cases', requireAuth, requireTrustedJuror, (req, res) => {
   res.json({ cases });
 });
 
-app.post('/governance/cases/:caseId/votes', requireAuth, requireTrustedJuror, (req, res) => {
+app.post('/governance/cases/:caseId/votes', requireAuth, requireTrustedJuror, async (req, res) => {
   const decision = req.body.decision;
   const action = req.body.action || 'hide_content';
 
@@ -440,6 +485,11 @@ app.post('/governance/cases/:caseId/votes', requireAuth, requireTrustedJuror, (r
 
   if (moderationCase.accused_hash === req.user.user_hash) {
     return res.status(400).json({ error: 'cannot_vote_on_own_case' });
+  }
+
+  const allowed = await enforceRateLimit(req, res, 'juryVote', req.user.user_hash);
+  if (!allowed) {
+    return;
   }
 
   const result = store.addCaseVote(

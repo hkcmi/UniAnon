@@ -56,14 +56,14 @@ Goal: make UniAnon usable on a local machine, not only through raw API calls.
 
 Goal: make the MVP harder to abuse and closer to real community use.
 
-- [ ] Add Redis support.
+- [x] Add Redis support.
 - [ ] Add rate limits:
-  - [ ] Magic link requests per email.
-  - [ ] Magic link requests per IP.
-  - [ ] Post creation per user.
-  - [ ] Comment creation per user.
-  - [ ] Report creation per user.
-  - [ ] Jury voting cooldowns.
+  - [x] Magic link requests per email.
+  - [x] Magic link requests per IP.
+  - [x] Post creation per user.
+  - [x] Comment creation per user.
+  - [x] Report creation per user.
+  - [x] Jury voting cooldowns.
 - [ ] Add session expiration.
 - [ ] Add secure session storage.
 - [ ] Add stronger validation for content and nicknames.
@@ -126,9 +126,9 @@ Goal: decide whether UniAnon remains standalone or becomes a NodeBB auth/governa
 
 Recommended next tasks:
 
-1. Start Redis rate limiting.
-2. Add session expiration.
-3. Add SMTP provider support.
+1. Add session expiration.
+2. Add SMTP provider support.
+3. Add stronger user-facing rate-limit messages.
 4. Continue separating store logic into clearer repository/service modules.
 
 Suggested implementation order:
