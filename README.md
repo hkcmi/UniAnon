@@ -83,6 +83,7 @@ EMAIL_DELIVERY=dev
 APP_BASE_URL=http://localhost:3000
 REPORT_WEIGHT_THRESHOLD=3
 JURY_APPROVAL_WEIGHT=3
+JURY_SIZE=5
 ADMIN_PROTECTION_APPROVAL_WEIGHT=8
 ```
 
@@ -235,6 +236,8 @@ Submit a jury vote. Requires a trusted user with `trust_level >= 2`.
 Supported decisions: `violation`, `dismiss`.
 
 Supported actions: `hide_content`, `ban_user`, `none`.
+
+When a case opens, UniAnon assigns up to `JURY_SIZE` trusted users at random and excludes the accused user and reporters from that jury.
 
 ### `POST /appeals`
 

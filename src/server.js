@@ -50,6 +50,7 @@ const errorMessages = {
   invalid_reason: 'Enter a reason for this appeal.',
   invalid_space_name: 'Space names must be 2-80 characters.',
   invalid_target_type: 'Choose a supported target type.',
+  juror_not_assigned: 'This case is assigned to a different jury.',
   moderator_required: 'Moderator access is required.',
   nickname_required: 'Set a nickname before continuing.',
   nickname_unavailable_or_already_set: 'That nickname is unavailable or has already been set.',
@@ -201,6 +202,7 @@ function serializeCase(moderationCase) {
     status: moderationCase.status,
     report_count: reports.length,
     report_weight: reports.reduce((sum, report) => sum + report.weight, 0),
+    juror_count: moderationCase.juror_hashes?.length || 0,
     violation_weight: violationWeight,
     dismiss_weight: dismissWeight,
     created_at: moderationCase.created_at,
@@ -758,6 +760,10 @@ app.post('/governance/cases/:caseId/votes', requireAuth, requireTrustedJuror, as
 
   if (moderationCase.accused_hash === req.user.user_hash) {
     return res.status(400).json({ error: 'cannot_vote_on_own_case' });
+  }
+
+  if (moderationCase.juror_hashes.length > 0 && !moderationCase.juror_hashes.includes(req.user.user_hash)) {
+    return res.status(403).json({ error: 'juror_not_assigned' });
   }
 
   const allowed = await enforceRateLimit(req, res, 'juryVote', req.user.user_hash);

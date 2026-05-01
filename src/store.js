@@ -100,6 +100,7 @@ function rowToModerationCase(row) {
     target_id: row.target_id,
     accused_hash: row.accused_hash,
     report_ids: parseJson(row.report_ids, []),
+    juror_hashes: parseJson(row.juror_hashes, []),
     status: row.status,
     votes: parseJson(row.votes, []),
     created_at: row.created_at,
@@ -219,6 +220,7 @@ function migrate(db) {
       target_id TEXT NOT NULL,
       accused_hash TEXT NOT NULL,
       report_ids TEXT NOT NULL DEFAULT '[]',
+      juror_hashes TEXT NOT NULL DEFAULT '[]',
       status TEXT NOT NULL,
       votes TEXT NOT NULL DEFAULT '[]',
       created_at TEXT NOT NULL,
@@ -317,6 +319,11 @@ function migrate(db) {
 
     db.exec('DROP TABLE magic_tokens');
     db.exec('ALTER TABLE magic_tokens_v2 RENAME TO magic_tokens');
+  }
+
+  const moderationCaseColumns = db.prepare('PRAGMA table_info(moderation_cases)').all().map((column) => column.name);
+  if (!moderationCaseColumns.includes('juror_hashes')) {
+    db.exec("ALTER TABLE moderation_cases ADD COLUMN juror_hashes TEXT NOT NULL DEFAULT '[]'");
   }
 }
 
@@ -438,6 +445,26 @@ export function createStore(options = {}) {
       persistUser(user);
     }
     return user;
+  }
+
+  function selectJurors(accusedHash, reportIds, size = config.jurySize) {
+    const conflicted = new Set([accusedHash]);
+    for (const reportId of reportIds) {
+      const report = reports.get(reportId);
+      if (report) {
+        conflicted.add(report.actor_hash);
+      }
+    }
+
+    return [...users.values()]
+      .filter((user) => {
+        return user.trust_level >= 2
+          && !user.banned
+          && !conflicted.has(user.user_hash);
+      })
+      .map((user) => user.user_hash)
+      .sort(() => crypto.randomInt(0, 3) - 1)
+      .slice(0, Math.max(0, size));
   }
 
   function persistUser(user) {
@@ -573,6 +600,7 @@ export function createStore(options = {}) {
     getTrustMetrics,
     calculateTrustLevel,
     refreshTrustLevel,
+    selectJurors,
 
     logAuthEvent({ eventType, emailDigest, domainGroup = null, success, reason }) {
       const event = {
@@ -796,6 +824,7 @@ export function createStore(options = {}) {
         target_id: targetId,
         accused_hash: accusedHash,
         report_ids: reportIds,
+        juror_hashes: selectJurors(accusedHash, reportIds),
         status: 'open',
         votes: [],
         created_at: new Date().toISOString(),
@@ -805,15 +834,16 @@ export function createStore(options = {}) {
       moderationCases.set(moderationCase.id, moderationCase);
       db.prepare(`
         INSERT INTO moderation_cases (
-          id, target_type, target_id, accused_hash, report_ids, status, votes, created_at, resolved_at, resolution
+          id, target_type, target_id, accused_hash, report_ids, juror_hashes, status, votes, created_at, resolved_at, resolution
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         moderationCase.id,
         moderationCase.target_type,
         moderationCase.target_id,
         moderationCase.accused_hash,
         JSON.stringify(moderationCase.report_ids),
+        JSON.stringify(moderationCase.juror_hashes),
         moderationCase.status,
         JSON.stringify(moderationCase.votes),
         moderationCase.created_at,

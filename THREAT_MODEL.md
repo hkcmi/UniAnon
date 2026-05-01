@@ -234,6 +234,10 @@ Users can still choose text that reveals themselves. UniAnon reduces accidental 
 
 Trust levels are computed from community-local signals: account age, visible posts/comments, protected roles, and upheld moderation violations. The calculation uses `user_hash` activity and does not require plaintext email or identity-provider user IDs.
 
+### Jury Conflict Avoidance
+
+When a moderation case opens, UniAnon assigns a random jury from trusted users and excludes the accused user and reporters from that case. This reduces direct retaliation and report-to-vote conflicts while preserving pseudonymous governance.
+
 ## Acceptable Privacy Modes
 
 ### Mode 0: Development

@@ -31,6 +31,7 @@ export const config = {
   },
   reportWeightThreshold: Number(process.env.REPORT_WEIGHT_THRESHOLD || 3),
   juryApprovalWeight: Number(process.env.JURY_APPROVAL_WEIGHT || 3),
+  jurySize: Number(process.env.JURY_SIZE || 5),
   adminProtectionApprovalWeight: Number(process.env.ADMIN_PROTECTION_APPROVAL_WEIGHT || 8),
   redisUrl: process.env.REDIS_URL || '',
   rateLimits: {

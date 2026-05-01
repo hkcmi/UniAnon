@@ -380,6 +380,22 @@ test('opens a moderation case from weighted reports and resolves by jury vote', 
   assert.equal(reportResponse.status, 201);
   const reportResult = await reportResponse.json();
   assert.equal(reportResult.case.status, 'open');
+  assert.equal(reportResult.case.juror_count, 1);
+
+  const reporterVoteResponse = await fetch(`${baseUrl}/governance/cases/${reportResult.case.id}/votes`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${reporter.sessionToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      decision: 'dismiss',
+      action: 'none'
+    })
+  });
+  assert.equal(reporterVoteResponse.status, 403);
+  const reporterVoteResult = await reporterVoteResponse.json();
+  assert.equal(reporterVoteResult.error, 'juror_not_assigned');
 
   const voteResponse = await fetch(`${baseUrl}/governance/cases/${reportResult.case.id}/votes`, {
     method: 'POST',
