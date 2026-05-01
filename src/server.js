@@ -70,6 +70,10 @@ function requireTrustedJuror(req, res, next) {
   return next();
 }
 
+function hasProtectedRole(user) {
+  return Boolean(user?.roles.includes('moderator') || user?.roles.includes('system_admin'));
+}
+
 function trustWeight(user) {
   return Math.min(user.trust_level + 1, 4);
 }
@@ -271,8 +275,7 @@ function authenticateAppealActor(req) {
 
 function caseApprovalThreshold(moderationCase) {
   const accused = store.users.get(moderationCase.accused_hash);
-  const protectedRole = accused?.roles.includes('moderator') || accused?.roles.includes('system_admin');
-  return protectedRole ? config.adminProtectionApprovalWeight : config.juryApprovalWeight;
+  return hasProtectedRole(accused) ? config.adminProtectionApprovalWeight : config.juryApprovalWeight;
 }
 
 function maybeResolveAppealCase(appealCase) {
@@ -768,6 +771,27 @@ app.post('/appeals/:appealId/votes', requireAuth, requireTrustedJuror, async (re
 app.post('/moderation/ban', requireAuth, requireModerator, (req, res) => {
   const targetHash = typeof req.body.user_hash === 'string' ? req.body.user_hash : '';
   const reason = validateContent(req.body.reason) || 'No reason provided';
+  const target = store.users.get(targetHash);
+
+  if (!target) {
+    return res.status(404).json({ error: 'target_not_found' });
+  }
+
+  if (target.user_hash === req.user.user_hash) {
+    return res.status(400).json({ error: 'cannot_ban_self' });
+  }
+
+  if (target.banned) {
+    return res.status(409).json({ error: 'target_already_banned' });
+  }
+
+  if (hasProtectedRole(target)) {
+    return res.status(403).json({
+      error: 'protected_user_requires_governance',
+      required_approval_weight: config.adminProtectionApprovalWeight
+    });
+  }
+
   const ok = store.banUser(req.user.user_hash, targetHash, reason);
 
   if (!ok) {

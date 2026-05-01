@@ -222,6 +222,10 @@ nullifier must not reveal email
 
 Banned users cannot receive a normal community session, but they can still prove membership and open an appeal. When `/auth/verify` detects a banned user, it returns a signed membership assertion instead of a session. The appeal endpoint accepts that assertion and opens an `appeal_case` without storing plaintext email.
 
+### Moderator Action Safeguards
+
+Direct moderator bans are intentionally narrow. A moderator cannot ban themselves, cannot ban users who are already banned, and cannot directly ban protected users with `moderator` or `system_admin` roles. Protected-user sanctions must go through governance and satisfy `ADMIN_PROTECTION_APPROVAL_WEIGHT`.
+
 ## Acceptable Privacy Modes
 
 ### Mode 0: Development

@@ -510,3 +510,48 @@ test('allows moderators to ban users and read audit events', async () => {
       && event.reason === 'Audit test ban';
   }), true);
 });
+
+test('prevents direct moderator bans against protected users and self', async () => {
+  const moderator = await signup('safeguard-mod@example.edu', 'safeguard_mod');
+  const protectedTarget = await signup('safeguard-target@example.edu', 'safeguard_target');
+
+  const moderatorUser = store.users.get(moderator.user.user_hash);
+  moderatorUser.roles.push('moderator');
+  store.persistUser(moderatorUser);
+
+  const protectedUser = store.users.get(protectedTarget.user.user_hash);
+  protectedUser.roles.push('moderator');
+  store.persistUser(protectedUser);
+
+  const selfBan = await fetch(`${baseUrl}/moderation/ban`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${moderator.sessionToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      user_hash: moderator.user.user_hash,
+      reason: 'self ban should fail'
+    })
+  });
+  assert.equal(selfBan.status, 400);
+  const selfBanBody = await selfBan.json();
+  assert.equal(selfBanBody.error, 'cannot_ban_self');
+
+  const protectedBan = await fetch(`${baseUrl}/moderation/ban`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${moderator.sessionToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      user_hash: protectedTarget.user.user_hash,
+      reason: 'protected ban should require governance'
+    })
+  });
+  assert.equal(protectedBan.status, 403);
+  const protectedBanBody = await protectedBan.json();
+  assert.equal(protectedBanBody.error, 'protected_user_requires_governance');
+  assert.equal(protectedBanBody.required_approval_weight, 8);
+  assert.equal(store.users.get(protectedTarget.user.user_hash).banned, false);
+});
