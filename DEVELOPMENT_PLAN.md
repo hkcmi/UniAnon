@@ -36,21 +36,21 @@ Goal: make UniAnon usable on a local machine, not only through raw API calls.
 - [x] Add database bootstrap migrations.
 - [x] Add `.env.example` for local configuration.
 - [ ] Add seed script for local demo data.
-- [ ] Add real dev login flow page.
-- [ ] Add web frontend.
+- [x] Add real dev login flow page.
+- [x] Add web frontend.
 - [ ] Add pages:
-  - [ ] Login by email.
-  - [ ] Set nickname.
-  - [ ] Space list.
-  - [ ] Post list.
-  - [ ] Post detail with comments.
-  - [ ] Create post.
-  - [ ] Report content.
-  - [ ] Governance case list.
-  - [ ] Jury voting page.
+  - [x] Login by email.
+  - [x] Set nickname.
+  - [x] Space list.
+  - [x] Post list.
+  - [x] Post detail with comments.
+  - [x] Create post.
+  - [x] Report content.
+  - [x] Governance case list.
+  - [x] Jury voting page.
   - [ ] Basic moderation/audit page.
-- [ ] Add local dev command that starts API and frontend together.
-- [ ] Update README with local usage instructions.
+- [x] Add local dev command that starts API and frontend together.
+- [x] Update README with local usage instructions.
 
 ## Phase 2: Security and Anti-Abuse
 
@@ -127,8 +127,8 @@ Goal: decide whether UniAnon remains standalone or becomes a NodeBB auth/governa
 Recommended next tasks:
 
 1. Add Docker Compose.
-2. Add a minimal web UI for local use.
-3. Add local dev seed/demo flow.
+2. Add local dev seed/demo flow.
+3. Add basic moderation/audit page.
 4. Continue separating store logic into clearer repository/service modules.
 
 Suggested implementation order:

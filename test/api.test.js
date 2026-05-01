@@ -64,6 +64,14 @@ test('rejects unapproved email domains', async () => {
   assert.equal(response.status, 403);
 });
 
+test('serves the local web UI', async () => {
+  const response = await fetch(`${baseUrl}/`);
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(html, /<title>UniAnon<\/title>/);
+});
+
 test('supports signup, nickname, post, and comment flow', async () => {
   const requestLink = await fetch(`${baseUrl}/auth/request-link`, {
     method: 'POST',

@@ -45,6 +45,8 @@ The API defaults to `http://localhost:3000`.
 
 Copy `.env.example` to `.env` for local configuration.
 
+Open `http://localhost:3000` after starting the server to use the local web UI.
+
 Useful environment variables:
 
 ```bash

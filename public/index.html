@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>UniAnon</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>UniAnon</h1>
+        <p id="sessionLine">Not signed in</p>
+      </div>
+      <button id="logoutButton" class="secondary hidden" type="button">Log out</button>
+    </header>
+
+    <main class="shell">
+      <section class="panel auth-panel" id="authPanel">
+        <div class="panel-head">
+          <h2>Access</h2>
+          <span class="badge">Domain verified</span>
+        </div>
+        <form id="requestLinkForm" class="stack">
+          <label for="emailInput">Email</label>
+          <div class="inline-form">
+            <input id="emailInput" name="email" type="email" placeholder="person@example.edu" autocomplete="email" required>
+            <button type="submit">Request link</button>
+          </div>
+        </form>
+        <form id="verifyForm" class="stack">
+          <label for="tokenInput">Magic token</label>
+          <div class="inline-form">
+            <input id="tokenInput" name="token" type="text" autocomplete="one-time-code" required>
+            <button type="submit">Verify</button>
+          </div>
+        </form>
+        <p id="authStatus" class="status"></p>
+      </section>
+
+      <section class="panel hidden" id="nicknamePanel">
+        <div class="panel-head">
+          <h2>Nickname</h2>
+        </div>
+        <form id="nicknameForm" class="inline-form">
+          <input id="nicknameInput" name="nickname" type="text" placeholder="quiet_signal" maxlength="32" required>
+          <button type="submit">Set nickname</button>
+        </form>
+        <p id="nicknameStatus" class="status"></p>
+      </section>
+
+      <section class="workspace">
+        <aside class="panel sidebar">
+          <div class="panel-head">
+            <h2>Spaces</h2>
+            <button id="refreshButton" class="icon-button" type="button" title="Refresh">Refresh</button>
+          </div>
+          <div id="spaceList" class="space-list"></div>
+        </aside>
+
+        <section class="content-flow">
+          <section class="panel composer hidden" id="composerPanel">
+            <div class="panel-head">
+              <h2>Create Post</h2>
+              <span id="activeSpaceLabel" class="badge">public</span>
+            </div>
+            <form id="postForm" class="stack">
+              <textarea id="postContent" name="content" rows="4" placeholder="Write a post..." required></textarea>
+              <div class="form-actions">
+                <button type="submit">Publish</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="feed" id="postList"></section>
+        </section>
+
+        <aside class="panel governance">
+          <div class="panel-head">
+            <h2>Governance</h2>
+          </div>
+          <div id="caseList" class="case-list"></div>
+        </aside>
+      </section>
+    </main>
+
+    <template id="postTemplate">
+      <article class="post-item">
+        <div class="item-head">
+          <div>
+            <strong class="post-author"></strong>
+            <span class="muted post-time"></span>
+          </div>
+          <button class="secondary report-post" type="button">Report</button>
+        </div>
+        <p class="post-content"></p>
+        <div class="comment-list"></div>
+        <form class="comment-form inline-form hidden">
+          <input class="comment-input" type="text" placeholder="Add a comment" required>
+          <button type="submit">Comment</button>
+        </form>
+      </article>
+    </template>
+
+    <template id="caseTemplate">
+      <article class="case-item">
+        <div class="item-head">
+          <strong class="case-title"></strong>
+          <span class="badge case-status"></span>
+        </div>
+        <dl class="case-meta">
+          <div><dt>Reports</dt><dd class="case-reports"></dd></div>
+          <div><dt>Violation</dt><dd class="case-violation"></dd></div>
+          <div><dt>Dismiss</dt><dd class="case-dismiss"></dd></div>
+        </dl>
+        <div class="case-actions hidden">
+          <button class="vote-violation" type="button">Violation</button>
+          <button class="secondary vote-dismiss" type="button">Dismiss</button>
+        </div>
+      </article>
+    </template>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
