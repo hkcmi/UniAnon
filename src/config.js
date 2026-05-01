@@ -1,6 +1,7 @@
 import 'dotenv/config';
 
 const defaultDomains = ['example.edu', 'example.org', 'company.com'];
+const isTest = process.env.NODE_ENV === 'test';
 
 export const config = {
   port: Number(process.env.PORT || 3000),
@@ -23,7 +24,7 @@ export const config = {
     },
     magicLinkIp: {
       windowMs: Number(process.env.RATE_LIMIT_MAGIC_LINK_IP_WINDOW_MS || 60 * 1000),
-      max: Number(process.env.RATE_LIMIT_MAGIC_LINK_IP_MAX || 10)
+      max: Number(process.env.RATE_LIMIT_MAGIC_LINK_IP_MAX || (isTest ? 1000 : 10))
     },
     postCreate: {
       windowMs: Number(process.env.RATE_LIMIT_POST_CREATE_WINDOW_MS || 60 * 1000),

@@ -200,6 +200,7 @@ docker compose up --build
 - There is no real SMTP provider yet.
 - Sessions expire according to `SESSION_TTL_MS`; browser-side refresh handling is still basic.
 - Redis rate limiting is implemented for key write paths, but policy tuning is still early.
+- SQLite stores session token hashes, not plaintext session tokens.
 - SQLite is intended for local MVP use.
 - The current app is a standalone MVP, not a NodeBB plugin yet.
 

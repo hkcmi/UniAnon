@@ -232,4 +232,5 @@ The local web UI also shows moderation tools to users with the `moderator` or `s
 
 - Never expose `SERVER_SECRET`.
 - Do not store plaintext emails in the forum/content service.
+- Session tokens are returned once to clients; SQLite stores only SHA-256 token hashes.
 - SQLite is intended for local MVP development. Production can move the same store boundary to PostgreSQL later.

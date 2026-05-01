@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 import { nanoid } from 'nanoid';
 import { config } from './config.js';
@@ -30,6 +31,10 @@ function boolFromDb(value) {
 
 function boolToDb(value) {
   return value ? 1 : 0;
+}
+
+function hashSessionToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
 }
 
 function rowToUser(row) {
@@ -128,7 +133,8 @@ function migrate(db) {
     );
 
     CREATE TABLE IF NOT EXISTS sessions (
-      token TEXT PRIMARY KEY,
+      token TEXT,
+      token_hash TEXT UNIQUE,
       user_hash TEXT NOT NULL,
       created_at TEXT NOT NULL,
       expires_at INTEGER NOT NULL
@@ -208,10 +214,24 @@ function migrate(db) {
   `);
 
   const sessionColumns = db.prepare('PRAGMA table_info(sessions)').all().map((column) => column.name);
+  if (!sessionColumns.includes('token_hash')) {
+    db.exec('ALTER TABLE sessions ADD COLUMN token_hash TEXT');
+  }
+
   if (!sessionColumns.includes('expires_at')) {
     db.exec('ALTER TABLE sessions ADD COLUMN expires_at INTEGER NOT NULL DEFAULT 0');
     db.prepare('UPDATE sessions SET expires_at = ? WHERE expires_at = 0').run(Date.now() + config.sessionTtlMs);
   }
+
+  for (const row of db.prepare('SELECT rowid, token, token_hash FROM sessions').all()) {
+    if (!row.token_hash && row.token) {
+      db.prepare('UPDATE sessions SET token_hash = ?, token = NULL WHERE rowid = ?')
+        .run(hashSessionToken(row.token), row.rowid);
+    }
+  }
+
+  db.prepare('DELETE FROM sessions WHERE token_hash IS NULL OR token_hash = ?').run('');
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_sessions_token_hash ON sessions(token_hash)');
 }
 
 export function createStore(options = {}) {
@@ -280,14 +300,14 @@ export function createStore(options = {}) {
 
     for (const row of db.prepare('SELECT * FROM sessions ORDER BY created_at').all()) {
       const expiresAt = row.expires_at || Date.now() + config.sessionTtlMs;
-      sessions.set(row.token, {
+      sessions.set(row.token_hash, {
         user_hash: row.user_hash,
         created_at: row.created_at,
         expires_at: expiresAt
       });
 
       if (!row.expires_at) {
-        db.prepare('UPDATE sessions SET expires_at = ? WHERE token = ?').run(expiresAt, row.token);
+        db.prepare('UPDATE sessions SET expires_at = ? WHERE token_hash = ?').run(expiresAt, row.token_hash);
       }
     }
 
@@ -412,26 +432,28 @@ export function createStore(options = {}) {
 
     createSession(userHash) {
       const token = nanoid(40);
+      const tokenHash = hashSessionToken(token);
       const session = {
         user_hash: userHash,
         created_at: new Date().toISOString(),
         expires_at: Date.now() + config.sessionTtlMs
       };
-      sessions.set(token, session);
-      db.prepare('INSERT INTO sessions (token, user_hash, created_at, expires_at) VALUES (?, ?, ?, ?)')
-        .run(token, session.user_hash, session.created_at, session.expires_at);
+      sessions.set(tokenHash, session);
+      db.prepare('INSERT INTO sessions (token, token_hash, user_hash, created_at, expires_at) VALUES (?, ?, ?, ?, ?)')
+        .run(null, tokenHash, session.user_hash, session.created_at, session.expires_at);
       return token;
     },
 
     findSession(token) {
-      const session = sessions.get(token);
+      const tokenHash = hashSessionToken(token);
+      const session = sessions.get(tokenHash);
       if (!session) {
         return null;
       }
 
       if (session.expires_at <= Date.now()) {
-        sessions.delete(token);
-        db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+        sessions.delete(tokenHash);
+        db.prepare('DELETE FROM sessions WHERE token_hash = ?').run(tokenHash);
         return null;
       }
 

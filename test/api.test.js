@@ -90,7 +90,9 @@ test('supports signup, nickname, post, and comment flow', async () => {
   const { session_token: sessionToken, user } = await verify.json();
   assert.equal(user.domain_group, 'example.edu');
   assert.equal(user.nickname, null);
-  assert.equal(typeof store.sessions.get(sessionToken).expires_at, 'number');
+  assert.equal([...store.sessions.values()].some((session) => {
+    return session.user_hash === user.user_hash && typeof session.expires_at === 'number';
+  }), true);
 
   const nickname = await fetch(`${baseUrl}/users/nickname`, {
     method: 'POST',
@@ -134,15 +136,27 @@ test('rejects expired sessions', async () => {
   const user = await signup('expired-session@example.edu', 'expired_session');
   const session = [...store.sessions.entries()].find(([, value]) => value.user_hash === user.user.user_hash);
   assert.notEqual(session, undefined);
-  const [sessionToken, sessionRecord] = session;
+  const [sessionHash, sessionRecord] = session;
   sessionRecord.expires_at = Date.now() - 1;
 
   const response = await fetch(`${baseUrl}/me`, {
-    headers: { authorization: `Bearer ${sessionToken}` }
+    headers: { authorization: `Bearer ${user.sessionToken}` }
   });
 
   assert.equal(response.status, 401);
-  assert.equal(store.sessions.has(sessionToken), false);
+  assert.equal(store.sessions.has(sessionHash), false);
+});
+
+test('stores only hashed session tokens', async () => {
+  const user = await signup('hashed-session@example.edu', 'hashed_session');
+  const rows = store.db.prepare('SELECT token, token_hash FROM sessions').all();
+  const row = rows.find((candidate) => {
+    return candidate.token_hash && candidate.token_hash.length === 64;
+  });
+
+  assert.notEqual(row, undefined);
+  assert.equal(rows.some((candidate) => candidate.token === user.sessionToken), false);
+  assert.equal(store.sessions.has(user.sessionToken), false);
 });
 
 test('stores no plaintext email on user records', () => {
