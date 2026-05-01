@@ -290,6 +290,7 @@ app.post('/auth/verify', (req, res) => {
 
   return res.json({
     session_token: sessionToken,
+    expires_in: Math.floor(config.sessionTtlMs / 1000),
     user: publicUser(user),
     nickname_required: !user.nickname
   });

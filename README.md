@@ -71,6 +71,7 @@ PORT=3000
 DATABASE_PATH=data/unianon.sqlite
 REDIS_URL=
 SERVER_SECRET=replace-me-with-a-long-random-secret
+SESSION_TTL_MS=604800000
 ALLOWED_DOMAINS=example.edu,example.org,company.com
 REPORT_WEIGHT_THRESHOLD=3
 JURY_APPROVAL_WEIGHT=3

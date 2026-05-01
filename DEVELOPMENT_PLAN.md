@@ -64,7 +64,7 @@ Goal: make the MVP harder to abuse and closer to real community use.
   - [x] Comment creation per user.
   - [x] Report creation per user.
   - [x] Jury voting cooldowns.
-- [ ] Add session expiration.
+- [x] Add session expiration.
 - [ ] Add secure session storage.
 - [ ] Add stronger validation for content and nicknames.
 - [ ] Add moderator action safeguards.
@@ -126,7 +126,7 @@ Goal: decide whether UniAnon remains standalone or becomes a NodeBB auth/governa
 
 Recommended next tasks:
 
-1. Add session expiration.
+1. Add secure session storage.
 2. Add SMTP provider support.
 3. Add stronger user-facing rate-limit messages.
 4. Continue separating store logic into clearer repository/service modules.

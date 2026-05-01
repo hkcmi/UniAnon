@@ -33,6 +33,7 @@ PORT=3000
 DATABASE_PATH=data/unianon.sqlite
 REDIS_URL=
 SERVER_SECRET=replace-me-with-a-long-random-secret
+SESSION_TTL_MS=604800000
 ALLOWED_DOMAINS=example.edu,example.org,company.com
 MAGIC_TOKEN_TTL_MS=900000
 REPORT_WEIGHT_THRESHOLD=3
@@ -197,7 +198,7 @@ docker compose up --build
 
 - Magic links are dev-only and returned in API responses.
 - There is no real SMTP provider yet.
-- Sessions do not expire yet.
+- Sessions expire according to `SESSION_TTL_MS`; browser-side refresh handling is still basic.
 - Redis rate limiting is implemented for key write paths, but policy tuning is still early.
 - SQLite is intended for local MVP use.
 - The current app is a standalone MVP, not a NodeBB plugin yet.

@@ -130,7 +130,8 @@ function migrate(db) {
     CREATE TABLE IF NOT EXISTS sessions (
       token TEXT PRIMARY KEY,
       user_hash TEXT NOT NULL,
-      created_at TEXT NOT NULL
+      created_at TEXT NOT NULL,
+      expires_at INTEGER NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS magic_tokens (
@@ -205,6 +206,12 @@ function migrate(db) {
     CREATE INDEX IF NOT EXISTS idx_reports_target ON reports(target_type, target_id);
     CREATE INDEX IF NOT EXISTS idx_cases_target_status ON moderation_cases(target_type, target_id, status);
   `);
+
+  const sessionColumns = db.prepare('PRAGMA table_info(sessions)').all().map((column) => column.name);
+  if (!sessionColumns.includes('expires_at')) {
+    db.exec('ALTER TABLE sessions ADD COLUMN expires_at INTEGER NOT NULL DEFAULT 0');
+    db.prepare('UPDATE sessions SET expires_at = ? WHERE expires_at = 0').run(Date.now() + config.sessionTtlMs);
+  }
 }
 
 export function createStore(options = {}) {
@@ -272,10 +279,16 @@ export function createStore(options = {}) {
     }
 
     for (const row of db.prepare('SELECT * FROM sessions ORDER BY created_at').all()) {
+      const expiresAt = row.expires_at || Date.now() + config.sessionTtlMs;
       sessions.set(row.token, {
         user_hash: row.user_hash,
-        created_at: row.created_at
+        created_at: row.created_at,
+        expires_at: expiresAt
       });
+
+      if (!row.expires_at) {
+        db.prepare('UPDATE sessions SET expires_at = ? WHERE token = ?').run(expiresAt, row.token);
+      }
     }
 
     for (const row of db.prepare('SELECT * FROM magic_tokens').all()) {
@@ -401,11 +414,12 @@ export function createStore(options = {}) {
       const token = nanoid(40);
       const session = {
         user_hash: userHash,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        expires_at: Date.now() + config.sessionTtlMs
       };
       sessions.set(token, session);
-      db.prepare('INSERT INTO sessions (token, user_hash, created_at) VALUES (?, ?, ?)')
-        .run(token, session.user_hash, session.created_at);
+      db.prepare('INSERT INTO sessions (token, user_hash, created_at, expires_at) VALUES (?, ?, ?, ?)')
+        .run(token, session.user_hash, session.created_at, session.expires_at);
       return token;
     },
 
@@ -414,6 +428,13 @@ export function createStore(options = {}) {
       if (!session) {
         return null;
       }
+
+      if (session.expires_at <= Date.now()) {
+        sessions.delete(token);
+        db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+        return null;
+      }
+
       return users.get(session.user_hash) || null;
     },
 
