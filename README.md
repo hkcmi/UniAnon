@@ -155,6 +155,8 @@ Set the user's globally unique nickname. Requires `Authorization: Bearer <sessio
 { "nickname": "quiet-signal" }
 ```
 
+Nicknames must be 3-32 characters, start with a letter or number, and use only letters, numbers, `_`, or `-`. Reserved system names and URL-like nicknames are rejected.
+
 ### `GET /spaces`
 
 List spaces visible to the current user. Public spaces are visible without authentication.
@@ -180,6 +182,8 @@ Create a post. Requires authentication and nickname setup.
   "content": "Hello from a verified anonymous member."
 }
 ```
+
+Posts, comments, reports, and appeals reject control characters, empty content, content above 5000 characters, and extreme repeated-character noise.
 
 ### `GET /posts`
 

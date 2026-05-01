@@ -70,7 +70,7 @@ Goal: make the MVP harder to abuse and closer to real community use.
   - [x] Jury voting cooldowns.
 - [x] Add session expiration.
 - [x] Add secure session storage.
-- [ ] Add stronger validation for content and nicknames.
+- [x] Add stronger validation for content and nicknames.
 - [x] Add moderator action safeguards.
 - [x] Add appeal case model.
 - [ ] Add user-facing error messages.

@@ -134,6 +134,52 @@ test('supports signup, nickname, post, and comment flow', async () => {
   assert.equal(posts[0].comments.length, 1);
 });
 
+test('rejects unsafe nicknames and noisy content', async () => {
+  const user = await signup('validation@example.edu', 'validation_user');
+
+  const nicknameUser = await signup('validation-nick@example.edu', 'validation_nick');
+  const reservedNickname = await fetch(`${baseUrl}/users/nickname`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${nicknameUser.sessionToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({ nickname: 'admin' })
+  });
+  assert.equal(reservedNickname.status, 400);
+
+  const urlNicknameUser = await signup('validation-url@example.edu', 'validation_url');
+  const urlNickname = await fetch(`${baseUrl}/users/nickname`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${urlNicknameUser.sessionToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({ nickname: 'www_user' })
+  });
+  assert.equal(urlNickname.status, 400);
+
+  const controlCharPost = await fetch(`${baseUrl}/posts`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${user.sessionToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({ content: 'hello\u0001world' })
+  });
+  assert.equal(controlCharPost.status, 400);
+
+  const repeatedCharPost = await fetch(`${baseUrl}/posts`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${user.sessionToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({ content: 'a'.repeat(80) })
+  });
+  assert.equal(repeatedCharPost.status, 400);
+});
+
 test('exchanges membership assertion without email', async () => {
   const requestLink = await fetch(`${baseUrl}/auth/request-link`, {
     method: 'POST',

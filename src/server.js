@@ -182,8 +182,55 @@ function validateContent(content) {
     return null;
   }
 
-  const trimmed = content.trim();
+  const trimmed = content.trim().replace(/\r\n/g, '\n');
   if (trimmed.length < 1 || trimmed.length > 5000) {
+    return null;
+  }
+
+  if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(trimmed)) {
+    return null;
+  }
+
+  if (/(.)\1{79,}/u.test(trimmed)) {
+    return null;
+  }
+
+  const nonWhitespace = trimmed.replace(/\s/g, '');
+  if (nonWhitespace.length < 1) {
+    return null;
+  }
+
+  return trimmed;
+}
+
+function validateNickname(nickname) {
+  if (typeof nickname !== 'string') {
+    return null;
+  }
+
+  const trimmed = nickname.trim();
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]{2,31}$/.test(trimmed)) {
+    return null;
+  }
+
+  const canonical = trimmed.toLowerCase();
+  const reserved = new Set([
+    'admin',
+    'administrator',
+    'appeal_jury',
+    'deleted',
+    'jury',
+    'moderator',
+    'system',
+    'system_admin',
+    'unianon'
+  ]);
+
+  if (reserved.has(canonical)) {
+    return null;
+  }
+
+  if (canonical.includes('http') || canonical.includes('www') || canonical.includes('dotcom')) {
     return null;
   }
 
@@ -499,8 +546,8 @@ app.post('/spaces', requireAuth, requireModerator, (req, res) => {
 });
 
 app.post('/users/nickname', requireAuth, (req, res) => {
-  const nickname = typeof req.body.nickname === 'string' ? req.body.nickname.trim() : '';
-  if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]{2,31}$/.test(nickname)) {
+  const nickname = validateNickname(req.body.nickname);
+  if (!nickname) {
     return res.status(400).json({ error: 'invalid_nickname' });
   }
 
