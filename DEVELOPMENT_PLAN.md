@@ -87,7 +87,7 @@ Goal: make governance more complete and closer to the project specification.
 - [x] Add random jury selection.
 - [x] Prevent jury conflicts of interest.
 - [ ] Add administrator protection thresholds.
-- [ ] Add multi-party approval for high-impact actions.
+- [x] Add multi-party approval for high-impact actions.
 - [x] Add appeal workflow.
 - [ ] Add transparent audit views.
 

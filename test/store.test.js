@@ -25,6 +25,11 @@ test('persists core community data across store restarts', () => {
   });
   const appealCase = firstStore.createAppealCase(user.user_hash, 'user', user.user_hash, 'Please review.');
   firstStore.addAppealVote(appealCase.id, 'juror-hash', 'approve', 3);
+  const approvalRequest = firstStore.createApprovalRequest('create_space', {
+    name: 'Approval Space',
+    allowed_domains: ['example.edu']
+  }, user.user_hash);
+  firstStore.approveRequest(approvalRequest.id, 'second-approver');
   firstStore.close();
 
   const secondStore = createStore({ databasePath });
@@ -35,6 +40,7 @@ test('persists core community data across store restarts', () => {
   assert.equal([...secondStore.comments.values()][0].content, 'So should this comment.');
   assert.equal(secondStore.authEvents[0].email_digest, 'a'.repeat(64));
   assert.equal(secondStore.appealCases.get(appealCase.id).votes[0].decision, 'approve');
+  assert.equal(secondStore.approvalRequests.get(approvalRequest.id).approvals.length, 2);
   secondStore.close();
 
   fs.rmSync(dir, { recursive: true, force: true });

@@ -85,6 +85,7 @@ REPORT_WEIGHT_THRESHOLD=3
 JURY_APPROVAL_WEIGHT=3
 JURY_SIZE=5
 ADMIN_PROTECTION_APPROVAL_WEIGHT=8
+HIGH_IMPACT_APPROVAL_COUNT=2
 ```
 
 For local development, `/auth/request-link` returns the verification token in the response. Set `EMAIL_DELIVERY=smtp` to send magic links through SMTP instead.
@@ -166,7 +167,7 @@ List spaces visible to the current user. Public spaces are visible without authe
 
 ### `POST /spaces`
 
-Create a domain-restricted space. Requires a moderator session.
+Request creation of a domain-restricted space. Requires a moderator session. Restricted space creation is a high-impact action and requires `HIGH_IMPACT_APPROVAL_COUNT` distinct moderator/admin approvals before the space is created.
 
 ```json
 {
@@ -174,6 +175,12 @@ Create a domain-restricted space. Requires a moderator session.
   "allowed_domains": ["example.org"]
 }
 ```
+
+The first request returns `202` with an `approval_request`. A later matching request from another moderator/admin returns `201` with the created `space`.
+
+### `GET /approvals`
+
+List approval requests. Requires a moderator session.
 
 ### `POST /posts`
 

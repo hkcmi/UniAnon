@@ -33,6 +33,7 @@ export const config = {
   juryApprovalWeight: Number(process.env.JURY_APPROVAL_WEIGHT || 3),
   jurySize: Number(process.env.JURY_SIZE || 5),
   adminProtectionApprovalWeight: Number(process.env.ADMIN_PROTECTION_APPROVAL_WEIGHT || 8),
+  highImpactApprovalCount: Number(process.env.HIGH_IMPACT_APPROVAL_COUNT || 2),
   redisUrl: process.env.REDIS_URL || '',
   rateLimits: {
     magicLinkEmail: {

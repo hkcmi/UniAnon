@@ -486,10 +486,16 @@ test('allows banned users to appeal with a membership assertion', async () => {
 
 test('restricts spaces by allowed email domain', async () => {
   const moderator = await signup('space-mod@example.edu', 'space_mod');
+  const secondModerator = await signup('space-mod-2@example.edu', 'space_mod_2');
   const eduUser = await signup('space-edu@example.edu', 'space_edu');
   const orgUser = await signup('space-org@example.org', 'space_org');
 
-  store.users.get(moderator.user.user_hash).roles.push('moderator');
+  const moderatorUser = store.users.get(moderator.user.user_hash);
+  moderatorUser.roles.push('moderator');
+  store.persistUser(moderatorUser);
+  const secondModeratorUser = store.users.get(secondModerator.user.user_hash);
+  secondModeratorUser.roles.push('moderator');
+  store.persistUser(secondModeratorUser);
 
   const createSpace = await fetch(`${baseUrl}/spaces`, {
     method: 'POST',
@@ -502,8 +508,25 @@ test('restricts spaces by allowed email domain', async () => {
       allowed_domains: ['example.org']
     })
   });
-  assert.equal(createSpace.status, 201);
-  const { space } = await createSpace.json();
+  assert.equal(createSpace.status, 202);
+  const pending = await createSpace.json();
+  assert.equal(pending.approval_request.approvals_count, 1);
+
+  const approveSpace = await fetch(`${baseUrl}/spaces`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${secondModerator.sessionToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      name: 'Example Org',
+      allowed_domains: ['example.org']
+    })
+  });
+  assert.equal(approveSpace.status, 201);
+  const { space, approval_request: approvalRequest } = await approveSpace.json();
+  assert.equal(approvalRequest.status, 'approved');
+  assert.equal(approvalRequest.approvals_count, 2);
 
   const deniedPost = await fetch(`${baseUrl}/posts`, {
     method: 'POST',
@@ -541,6 +564,7 @@ test('restricts spaces by allowed email domain', async () => {
   });
   const orgPosts = await orgList.json();
   assert.equal(orgPosts.posts.some((visiblePost) => visiblePost.id === post.id), true);
+  assert.equal(store.auditLog.some((event) => event.operation === 'approval_resolved'), true);
 });
 
 test('allows moderators to ban users and read audit events', async () => {

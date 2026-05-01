@@ -238,6 +238,10 @@ Trust levels are computed from community-local signals: account age, visible pos
 
 When a moderation case opens, UniAnon assigns a random jury from trusted users and excludes the accused user and reporters from that case. This reduces direct retaliation and report-to-vote conflicts while preserving pseudonymous governance.
 
+### Multi-Party Approval
+
+High-impact actions can require distinct moderator/admin approvals before execution. The MVP applies this to restricted space creation so one moderator cannot unilaterally change access boundaries. Approval requests store pseudonymous approver hashes, operation metadata, and audit events, not emails.
+
 ## Acceptable Privacy Modes
 
 ### Mode 0: Development

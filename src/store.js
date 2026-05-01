@@ -149,6 +149,20 @@ function rowToAppealCase(row) {
   };
 }
 
+function rowToApprovalRequest(row) {
+  return {
+    id: row.id,
+    operation: row.operation,
+    payload: parseJson(row.payload, {}),
+    approvals: parseJson(row.approvals, []),
+    status: row.status,
+    created_by: row.created_by,
+    created_at: row.created_at,
+    resolved_at: row.resolved_at,
+    result: parseJson(row.result, null)
+  };
+}
+
 function migrate(db) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
@@ -262,12 +276,25 @@ function migrate(db) {
       resolution TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS approval_requests (
+      id TEXT PRIMARY KEY,
+      operation TEXT NOT NULL,
+      payload TEXT NOT NULL DEFAULT '{}',
+      approvals TEXT NOT NULL DEFAULT '[]',
+      status TEXT NOT NULL,
+      created_by TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      resolved_at TEXT,
+      result TEXT
+    );
+
     CREATE INDEX IF NOT EXISTS idx_posts_space_id ON posts(space_id);
     CREATE INDEX IF NOT EXISTS idx_comments_post_id ON comments(post_id);
     CREATE INDEX IF NOT EXISTS idx_reports_target ON reports(target_type, target_id);
     CREATE INDEX IF NOT EXISTS idx_cases_target_status ON moderation_cases(target_type, target_id, status);
     CREATE INDEX IF NOT EXISTS idx_auth_events_email_digest ON auth_events(email_digest);
     CREATE INDEX IF NOT EXISTS idx_appeal_cases_target_status ON appeal_cases(target_type, target_id, status);
+    CREATE INDEX IF NOT EXISTS idx_approval_requests_operation_status ON approval_requests(operation, status);
   `);
 
   const sessionColumns = db.prepare('PRAGMA table_info(sessions)').all().map((column) => column.name);
@@ -344,6 +371,7 @@ export function createStore(options = {}) {
   const reports = new Map();
   const moderationCases = new Map();
   const appealCases = new Map();
+  const approvalRequests = new Map();
   const auditLog = [];
   const authEvents = [];
 
@@ -564,6 +592,11 @@ export function createStore(options = {}) {
       appealCases.set(appealCase.id, appealCase);
     }
 
+    for (const row of db.prepare('SELECT * FROM approval_requests ORDER BY created_at').all()) {
+      const approvalRequest = rowToApprovalRequest(row);
+      approvalRequests.set(approvalRequest.id, approvalRequest);
+    }
+
     for (const row of db.prepare('SELECT * FROM audit_log ORDER BY created_at').all()) {
       auditLog.push(rowToAuditEvent(row));
     }
@@ -588,6 +621,7 @@ export function createStore(options = {}) {
     reports,
     moderationCases,
     appealCases,
+    approvalRequests,
     auditLog,
     authEvents,
 
@@ -735,6 +769,100 @@ export function createStore(options = {}) {
       db.prepare('INSERT INTO spaces (id, name, allowed_domains, created_at) VALUES (?, ?, ?, ?)')
         .run(space.id, space.name, JSON.stringify(space.allowed_domains), space.created_at);
       return space;
+    },
+
+    findOpenApprovalRequest(operation, payload) {
+      return [...approvalRequests.values()].find((request) => {
+        return request.operation === operation
+          && request.status === 'open'
+          && JSON.stringify(request.payload) === JSON.stringify(payload);
+      }) || null;
+    },
+
+    createApprovalRequest(operation, payload, actorHash) {
+      const request = {
+        id: nanoid(16),
+        operation,
+        payload,
+        approvals: [actorHash],
+        status: 'open',
+        created_by: actorHash,
+        created_at: new Date().toISOString(),
+        resolved_at: null,
+        result: null
+      };
+      approvalRequests.set(request.id, request);
+      db.prepare(`
+        INSERT INTO approval_requests (id, operation, payload, approvals, status, created_by, created_at, resolved_at, result)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        request.id,
+        request.operation,
+        JSON.stringify(request.payload),
+        JSON.stringify(request.approvals),
+        request.status,
+        request.created_by,
+        request.created_at,
+        request.resolved_at,
+        request.result
+      );
+      addAuditEvent({
+        id: nanoid(16),
+        operation: 'approval_requested',
+        actor_hash: actorHash,
+        target_type: operation,
+        target_id: request.id,
+        reason: 'high impact action requires multi-party approval',
+        created_at: request.created_at
+      });
+      return request;
+    },
+
+    approveRequest(requestId, actorHash) {
+      const request = approvalRequests.get(requestId);
+      if (!request || request.status !== 'open') {
+        return null;
+      }
+
+      if (!request.approvals.includes(actorHash)) {
+        request.approvals.push(actorHash);
+      }
+
+      db.prepare('UPDATE approval_requests SET approvals = ? WHERE id = ?')
+        .run(JSON.stringify(request.approvals), request.id);
+      addAuditEvent({
+        id: nanoid(16),
+        operation: 'approval_added',
+        actor_hash: actorHash,
+        target_type: request.operation,
+        target_id: request.id,
+        reason: 'approval recorded',
+        created_at: new Date().toISOString()
+      });
+      return request;
+    },
+
+    resolveApprovalRequest(requestId, result) {
+      const request = approvalRequests.get(requestId);
+      if (!request || request.status !== 'open') {
+        return null;
+      }
+
+      request.status = 'approved';
+      request.resolved_at = new Date().toISOString();
+      request.result = result;
+      db.prepare('UPDATE approval_requests SET status = ?, resolved_at = ?, result = ? WHERE id = ?')
+        .run(request.status, request.resolved_at, JSON.stringify(request.result), request.id);
+      addAuditEvent({
+        id: nanoid(16),
+        operation: 'approval_resolved',
+        actor_hash: 'system',
+        target_type: request.operation,
+        target_id: request.id,
+        reason: 'required approvals reached',
+        created_at: request.resolved_at
+      });
+      return request;
     },
 
     createPost(userHash, spaceId, content) {

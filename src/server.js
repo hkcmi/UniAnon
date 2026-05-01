@@ -52,6 +52,7 @@ const errorMessages = {
   invalid_target_type: 'Choose a supported target type.',
   juror_not_assigned: 'This case is assigned to a different jury.',
   moderator_required: 'Moderator access is required.',
+  own_approval_not_sufficient: 'A second moderator or administrator must approve this action.',
   nickname_required: 'Set a nickname before continuing.',
   nickname_unavailable_or_already_set: 'That nickname is unavailable or has already been set.',
   not_found: 'Not found.',
@@ -182,6 +183,20 @@ function serializeSpace(space) {
     name: space.name,
     allowed_domains: space.allowed_domains,
     created_at: space.created_at
+  };
+}
+
+function serializeApprovalRequest(request) {
+  return {
+    id: request.id,
+    operation: request.operation,
+    status: request.status,
+    approvals_count: request.approvals.length,
+    required_approvals: config.highImpactApprovalCount,
+    created_by: request.created_by,
+    created_at: request.created_at,
+    resolved_at: request.resolved_at,
+    result: request.result
   };
 }
 
@@ -597,8 +612,41 @@ app.post('/spaces', requireAuth, requireModerator, (req, res) => {
     return res.status(400).json({ error: 'domain_not_allowed', domain: unknownDomain });
   }
 
-  const space = store.createSpace(name, [...new Set(allowedDomains)]);
-  return res.status(201).json({ space: serializeSpace(space) });
+  const payload = {
+    name,
+    allowed_domains: [...new Set(allowedDomains)].sort()
+  };
+  const existing = store.findOpenApprovalRequest('create_space', payload);
+  const approvalRequest = existing || store.createApprovalRequest('create_space', payload, req.user.user_hash);
+
+  if (existing && existing.created_by === req.user.user_hash && !existing.approvals.some((hash) => hash !== req.user.user_hash)) {
+    return res.status(409).json({
+      error: 'own_approval_not_sufficient',
+      approval_request: serializeApprovalRequest(existing)
+    });
+  }
+
+  if (existing) {
+    store.approveRequest(existing.id, req.user.user_hash);
+  }
+
+  if (approvalRequest.approvals.length < config.highImpactApprovalCount) {
+    return res.status(202).json({ approval_request: serializeApprovalRequest(approvalRequest) });
+  }
+
+  const space = store.createSpace(payload.name, payload.allowed_domains);
+  store.resolveApprovalRequest(approvalRequest.id, { space_id: space.id });
+  return res.status(201).json({
+    space: serializeSpace(space),
+    approval_request: serializeApprovalRequest(approvalRequest)
+  });
+});
+
+app.get('/approvals', requireAuth, requireModerator, (req, res) => {
+  const approvals = [...store.approvalRequests.values()]
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    .map(serializeApprovalRequest);
+  res.json({ approvals });
 });
 
 app.post('/users/nickname', requireAuth, (req, res) => {
