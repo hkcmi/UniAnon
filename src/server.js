@@ -130,8 +130,25 @@ function hasProtectedRole(user) {
   return Boolean(user?.roles.includes('moderator') || user?.roles.includes('system_admin'));
 }
 
-function trustWeight(user) {
+function voteWeight(user) {
   return Math.min(user.trust_level + 1, 4);
+}
+
+function reportWeight(user) {
+  if (user.banned || !user.nickname) {
+    return 0;
+  }
+
+  if (user.trust_level <= 0) {
+    return 1;
+  }
+
+  return Math.min(3, user.trust_level + 1);
+}
+
+function reportThresholdForTarget(accusedHash) {
+  const accused = store.users.get(accusedHash);
+  return hasProtectedRole(accused) ? config.adminProtectionApprovalWeight : config.reportWeightThreshold;
 }
 
 async function enforceRateLimit(req, res, limitName, subject) {
@@ -752,7 +769,7 @@ app.post('/reports', requireAuth, requireNickname, async (req, res) => {
     targetType,
     targetId,
     reason,
-    trustWeight(req.user)
+    reportWeight(req.user)
   );
 
   if (duplicate) {
@@ -763,9 +780,10 @@ app.post('/reports', requireAuth, requireNickname, async (req, res) => {
   const targetReports = [...store.reports.values()].filter((candidate) => {
     return candidate.target_type === targetType && candidate.target_id === targetId;
   });
-  const reportWeight = targetReports.reduce((sum, candidate) => sum + candidate.weight, 0);
+  const totalReportWeight = targetReports.reduce((sum, candidate) => sum + candidate.weight, 0);
+  const reportThreshold = reportThresholdForTarget(target.accusedHash);
 
-  if (!moderationCase && reportWeight >= config.reportWeightThreshold) {
+  if (!moderationCase && totalReportWeight >= reportThreshold) {
     moderationCase = store.createModerationCase(
       targetType,
       targetId,
@@ -776,7 +794,8 @@ app.post('/reports', requireAuth, requireNickname, async (req, res) => {
 
   return res.status(201).json({
     report_id: report.id,
-    report_weight: reportWeight,
+    report_weight: totalReportWeight,
+    report_threshold: reportThreshold,
     case: moderationCase ? serializeCase(moderationCase) : null
   });
 });
@@ -824,7 +843,7 @@ app.post('/governance/cases/:caseId/votes', requireAuth, requireTrustedJuror, as
     req.user.user_hash,
     decision,
     action,
-    trustWeight(req.user)
+    voteWeight(req.user)
   );
 
   if (!result) {
@@ -908,7 +927,7 @@ app.post('/appeals/:appealId/votes', requireAuth, requireTrustedJuror, async (re
     appealCase.id,
     req.user.user_hash,
     decision,
-    trustWeight(req.user)
+    voteWeight(req.user)
   );
 
   if (!result) {

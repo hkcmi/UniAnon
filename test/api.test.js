@@ -381,6 +381,8 @@ test('opens a moderation case from weighted reports and resolves by jury vote', 
   const reportResult = await reportResponse.json();
   assert.equal(reportResult.case.status, 'open');
   assert.equal(reportResult.case.juror_count, 1);
+  assert.equal(reportResult.report_weight, 3);
+  assert.equal(reportResult.report_threshold, 3);
 
   const reporterVoteResponse = await fetch(`${baseUrl}/governance/cases/${reportResult.case.id}/votes`, {
     method: 'POST',
@@ -417,6 +419,37 @@ test('opens a moderation case from weighted reports and resolves by jury vote', 
   const { posts } = await list.json();
   assert.equal(posts.some((visiblePost) => visiblePost.id === post.id), false);
   assert.equal(store.auditLog.some((event) => event.operation === 'jury_decision'), true);
+});
+
+test('uses higher report thresholds for protected users', async () => {
+  const protectedTarget = await signup('protected-report-target@example.edu', 'protected_report_target');
+  const reporter = await signup('protected-report-reporter@example.edu', 'protected_reporter');
+
+  const targetUser = store.users.get(protectedTarget.user.user_hash);
+  targetUser.roles.push('moderator');
+  store.persistUser(targetUser);
+
+  const reporterUser = store.users.get(reporter.user.user_hash);
+  reporterUser.trust_level = 2;
+  store.persistUser(reporterUser);
+
+  const reportResponse = await fetch(`${baseUrl}/reports`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${reporter.sessionToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      target_type: 'user',
+      target_id: protectedTarget.user.user_hash,
+      reason: 'Protected user report should need more weight.'
+    })
+  });
+  assert.equal(reportResponse.status, 201);
+  const reportResult = await reportResponse.json();
+  assert.equal(reportResult.report_weight, 3);
+  assert.equal(reportResult.report_threshold, 8);
+  assert.equal(reportResult.case, null);
 });
 
 test('allows banned users to appeal with a membership assertion', async () => {

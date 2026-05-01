@@ -225,6 +225,8 @@ Report a post, comment, or user. Weighted reports can automatically open a moder
 }
 ```
 
+Report weight is capped and based on the reporter's trust level. Protected users with `moderator` or `system_admin` roles require `ADMIN_PROTECTION_APPROVAL_WEIGHT` report weight before a case opens.
+
 ### `GET /governance/cases`
 
 List moderation cases. Requires a trusted user with `trust_level >= 2`.

@@ -226,6 +226,10 @@ Banned users cannot receive a normal community session, but they can still prove
 
 Direct moderator bans are intentionally narrow. A moderator cannot ban themselves, cannot ban users who are already banned, and cannot directly ban protected users with `moderator` or `system_admin` roles. Protected-user sanctions must go through governance and satisfy `ADMIN_PROTECTION_APPROVAL_WEIGHT`.
 
+### Weighted Reports
+
+Reports use capped trust-based weight. Newer users can still report, but higher-trust reporters carry more weight. Protected users with `moderator` or `system_admin` roles require the higher `ADMIN_PROTECTION_APPROVAL_WEIGHT` before a case opens, reducing report floods against governance participants.
+
 ### User-Supplied Identity Leakage
 
 Users can still choose text that reveals themselves. UniAnon reduces accidental leakage by rejecting reserved system nicknames, URL-like nicknames, control characters, and obvious repeated-character spam, but it cannot guarantee users will never self-identify in content.
