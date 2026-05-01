@@ -36,6 +36,8 @@ UniAnon combines privacy-preserving identity with reputation-based governance to
 
 ## Local Development
 
+[![CI](https://github.com/hkcmi/UniAnon/actions/workflows/ci.yml/badge.svg)](https://github.com/hkcmi/UniAnon/actions/workflows/ci.yml)
+
 ```bash
 npm install
 npm run dev

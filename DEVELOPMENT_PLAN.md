@@ -108,7 +108,7 @@ Goal: make the project easy to run outside the developer machine.
 - [x] Add `.env.example`.
 - [x] Add health checks.
 - [x] Add production start command.
-- [ ] Add CI test workflow.
+- [x] Add CI test workflow.
 - [ ] Add deployment guide.
 
 ## Phase 6: NodeBB Integration
@@ -126,9 +126,9 @@ Goal: decide whether UniAnon remains standalone or becomes a NodeBB auth/governa
 
 Recommended next tasks:
 
-1. Add CI test workflow.
-2. Add deployment guide.
-3. Start Redis rate limiting.
+1. Add deployment guide.
+2. Start Redis rate limiting.
+3. Add session expiration.
 4. Continue separating store logic into clearer repository/service modules.
 
 Suggested implementation order:
