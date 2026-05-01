@@ -6,12 +6,12 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "test": "node --test"
+    "test": "NODE_ENV=test node --test"
   },
   "dependencies": {
+    "dotenv": "^17.4.2",
     "express": "^4.19.2",
     "helmet": "^7.1.0",
     "nanoid": "^5.0.7"
-  },
-  "devDependencies": {}
+  }
 }

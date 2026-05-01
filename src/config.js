@@ -1,7 +1,10 @@
+import 'dotenv/config';
+
 const defaultDomains = ['example.edu', 'example.org', 'company.com'];
 
 export const config = {
   port: Number(process.env.PORT || 3000),
+  databasePath: process.env.DATABASE_PATH || (process.env.NODE_ENV === 'test' ? ':memory:' : 'data/unianon.sqlite'),
   serverSecret: process.env.SERVER_SECRET || 'dev-only-change-me',
   allowedDomains: (process.env.ALLOWED_DOMAINS || defaultDomains.join(','))
     .split(',')

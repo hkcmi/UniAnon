@@ -3,3 +3,6 @@ node_modules/
 .DS_Store
 npm-debug.log*
 coverage/
+data/*.sqlite
+data/*.sqlite-shm
+data/*.sqlite-wal
