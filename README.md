@@ -107,6 +107,8 @@ docker compose down
 
 SQLite data is stored in the `unianon-data` Docker volume.
 
+See [DEPLOYMENT.md](DEPLOYMENT.md) for the full local deployment guide.
+
 ## API Sketch
 
 ### `POST /auth/request-link`
