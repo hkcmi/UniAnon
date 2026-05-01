@@ -103,11 +103,11 @@ Goal: replace dev-only magic token responses with real email delivery.
 
 Goal: make the project easy to run outside the developer machine.
 
-- [ ] Add Dockerfile.
-- [ ] Add docker-compose for app, database, and Redis.
-- [ ] Add `.env.example`.
-- [ ] Add health checks.
-- [ ] Add production start command.
+- [x] Add Dockerfile.
+- [x] Add docker-compose for app and SQLite volume.
+- [x] Add `.env.example`.
+- [x] Add health checks.
+- [x] Add production start command.
 - [ ] Add CI test workflow.
 - [ ] Add deployment guide.
 
@@ -126,9 +126,9 @@ Goal: decide whether UniAnon remains standalone or becomes a NodeBB auth/governa
 
 Recommended next tasks:
 
-1. Add Docker Compose.
-2. Add Docker Compose.
-3. Add production start command.
+1. Add CI test workflow.
+2. Add deployment guide.
+3. Start Redis rate limiting.
 4. Continue separating store logic into clearer repository/service modules.
 
 Suggested implementation order:

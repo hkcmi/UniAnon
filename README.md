@@ -78,6 +78,33 @@ For local development, `/auth/request-link` returns the verification token in th
 
 By default, local data is stored in `data/unianon.sqlite`. Tests use an in-memory SQLite database.
 
+## Docker
+
+Build and run the local MVP:
+
+```bash
+docker compose up --build
+```
+
+Open `http://localhost:3000`.
+
+Seed demo data into the Docker volume:
+
+```bash
+docker compose run --rm app npm run seed:demo
+docker compose restart app
+```
+
+If you have not started the app yet, you can run the seed command before `docker compose up --build`.
+
+Stop the app:
+
+```bash
+docker compose down
+```
+
+SQLite data is stored in the `unianon-data` Docker volume.
+
 ## API Sketch
 
 ### `POST /auth/request-link`

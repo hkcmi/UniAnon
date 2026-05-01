@@ -1,0 +1,25 @@
+services:
+  app:
+    build: .
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      PORT: 3000
+      DATABASE_PATH: /app/data/unianon.sqlite
+      SERVER_SECRET: ${SERVER_SECRET:-dev-only-change-me}
+      ALLOWED_DOMAINS: ${ALLOWED_DOMAINS:-example.edu,example.org,company.com}
+      MAGIC_TOKEN_TTL_MS: ${MAGIC_TOKEN_TTL_MS:-900000}
+      REPORT_WEIGHT_THRESHOLD: ${REPORT_WEIGHT_THRESHOLD:-3}
+      JURY_APPROVAL_WEIGHT: ${JURY_APPROVAL_WEIGHT:-3}
+      ADMIN_PROTECTION_APPROVAL_WEIGHT: ${ADMIN_PROTECTION_APPROVAL_WEIGHT:-8}
+    volumes:
+      - unianon-data:/app/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  unianon-data:
