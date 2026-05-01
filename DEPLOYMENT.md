@@ -74,6 +74,8 @@ SMTP_PASS=your-smtp-password
 
 Use `SMTP_SECURE=true` for providers that require implicit TLS, usually on port `465`.
 
+SMTP providers necessarily see recipient email addresses. See [PRIVACY.md](PRIVACY.md) before choosing a delivery provider.
+
 ## Local Npm Run
 
 Install dependencies:

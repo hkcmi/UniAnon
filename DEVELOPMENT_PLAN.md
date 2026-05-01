@@ -97,7 +97,7 @@ Goal: replace dev-only magic token responses with real email delivery.
 - [x] Stop returning magic tokens in SMTP mode.
 - [ ] Add magic link expiration tests.
 - [ ] Add auth event logging.
-- [ ] Document auth privacy guarantees.
+- [x] Document auth privacy guarantees.
 
 ## Phase 5: Deployment
 
