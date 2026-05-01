@@ -47,6 +47,21 @@ Copy `.env.example` to `.env` for local configuration.
 
 Open `http://localhost:3000` after starting the server to use the local web UI.
 
+Seed local demo data:
+
+```bash
+npm run seed:demo
+```
+
+Demo login emails:
+
+- `moderator@example.edu`
+- `juror@example.edu`
+- `reporter@example.edu`
+- `member@example.edu`
+- `accused@example.edu`
+- `org-member@example.org`
+
 Useful environment variables:
 
 ```bash

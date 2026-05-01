@@ -35,7 +35,7 @@ Goal: make UniAnon usable on a local machine, not only through raw API calls.
 - [ ] Replace in-memory store with repository/service layer.
 - [x] Add database bootstrap migrations.
 - [x] Add `.env.example` for local configuration.
-- [ ] Add seed script for local demo data.
+- [x] Add seed script for local demo data.
 - [x] Add real dev login flow page.
 - [x] Add web frontend.
 - [ ] Add pages:
@@ -127,8 +127,8 @@ Goal: decide whether UniAnon remains standalone or becomes a NodeBB auth/governa
 Recommended next tasks:
 
 1. Add Docker Compose.
-2. Add local dev seed/demo flow.
-3. Add basic moderation/audit page.
+2. Add basic moderation/audit page.
+3. Add Docker Compose.
 4. Continue separating store logic into clearer repository/service modules.
 
 Suggested implementation order:
