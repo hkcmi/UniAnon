@@ -51,3 +51,31 @@ test('reuses an existing user when the nullifier already exists', () => {
 
   store.close();
 });
+
+test('calculates trust level from account age, content, and violations', () => {
+  const store = createStore({ databasePath: ':memory:' });
+  const user = store.upsertUser('trust-user', 'example.edu', 'trust-nullifier');
+  user.created_at = new Date(Date.now() - 31 * 24 * 60 * 60 * 1000).toISOString();
+  store.persistUser(user);
+
+  const space = store.spaces.get('public');
+  const firstPost = store.createPost(user.user_hash, space.id, 'Useful post 1');
+  store.createPost(user.user_hash, space.id, 'Useful post 2');
+  store.createComment(firstPost.id, user.user_hash, 'Useful comment');
+
+  assert.equal(store.users.get(user.user_hash).trust_level, 3);
+  assert.deepEqual(store.getTrustMetrics(user.user_hash).visible_content, 3);
+
+  const report = store.createReport('reporter-hash', 'post', firstPost.id, 'Confirmed issue', 3).report;
+  const moderationCase = store.createModerationCase('post', firstPost.id, user.user_hash, [report.id]);
+  store.resolveCase(moderationCase.id, {
+    decision: 'violation',
+    action: 'hide_content',
+    reason: 'confirmed by test'
+  });
+
+  assert.equal(store.users.get(user.user_hash).trust_level, 1);
+  assert.equal(store.getTrustMetrics(user.user_hash).upheld_violations, 1);
+
+  store.close();
+});

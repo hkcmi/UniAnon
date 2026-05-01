@@ -230,6 +230,10 @@ Direct moderator bans are intentionally narrow. A moderator cannot ban themselve
 
 Users can still choose text that reveals themselves. UniAnon reduces accidental leakage by rejecting reserved system nicknames, URL-like nicknames, control characters, and obvious repeated-character spam, but it cannot guarantee users will never self-identify in content.
 
+### Trust Without Real Identity
+
+Trust levels are computed from community-local signals: account age, visible posts/comments, protected roles, and upheld moderation violations. The calculation uses `user_hash` activity and does not require plaintext email or identity-provider user IDs.
+
 ## Acceptable Privacy Modes
 
 ### Mode 0: Development

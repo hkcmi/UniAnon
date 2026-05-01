@@ -373,6 +373,73 @@ export function createStore(options = {}) {
     );
   }
 
+  function getTrustMetrics(userHash, now = Date.now()) {
+    const user = users.get(userHash);
+    if (!user) {
+      return null;
+    }
+
+    const accountAgeDays = Math.max(0, Math.floor((now - new Date(user.created_at).getTime()) / (24 * 60 * 60 * 1000)));
+    const visiblePosts = [...posts.values()].filter((post) => post.user_hash === userHash && !post.hidden).length;
+    const visibleComments = [...comments.values()].filter((comment) => comment.user_hash === userHash && !comment.hidden).length;
+    const upheldViolations = [...moderationCases.values()].filter((moderationCase) => {
+      return moderationCase.accused_hash === userHash
+        && moderationCase.status === 'resolved'
+        && moderationCase.resolution?.decision === 'violation';
+    }).length;
+
+    return {
+      account_age_days: accountAgeDays,
+      visible_posts: visiblePosts,
+      visible_comments: visibleComments,
+      visible_content: visiblePosts + visibleComments,
+      upheld_violations: upheldViolations
+    };
+  }
+
+  function calculateTrustLevel(userHash, now = Date.now()) {
+    const user = users.get(userHash);
+    const metrics = getTrustMetrics(userHash, now);
+    if (!user || !metrics || user.banned) {
+      return 0;
+    }
+
+    if (user.roles.includes('moderator') || user.roles.includes('system_admin')) {
+      return 3;
+    }
+
+    let score = 0;
+    if (metrics.account_age_days >= 7) {
+      score += 1;
+    }
+    if (metrics.account_age_days >= 30) {
+      score += 1;
+    }
+    if (metrics.visible_content >= 3) {
+      score += 1;
+    }
+    if (metrics.visible_content >= 10) {
+      score += 1;
+    }
+    score -= metrics.upheld_violations * 2;
+
+    return Math.max(0, Math.min(3, score));
+  }
+
+  function refreshTrustLevel(userHash, now = Date.now()) {
+    const user = users.get(userHash);
+    if (!user) {
+      return null;
+    }
+
+    const nextLevel = calculateTrustLevel(userHash, now);
+    if (user.trust_level !== nextLevel) {
+      user.trust_level = nextLevel;
+      persistUser(user);
+    }
+    return user;
+  }
+
   function persistUser(user) {
     db.prepare(`
       INSERT INTO users (user_hash, nullifier, nickname, domain_group, trust_level, roles, created_at, banned)
@@ -502,6 +569,10 @@ export function createStore(options = {}) {
     },
 
     persistUser,
+
+    getTrustMetrics,
+    calculateTrustLevel,
+    refreshTrustLevel,
 
     logAuthEvent({ eventType, emailDigest, domainGroup = null, success, reason }) {
       const event = {
@@ -652,6 +723,7 @@ export function createStore(options = {}) {
         INSERT INTO posts (id, user_hash, space_id, content, created_at, hidden)
         VALUES (?, ?, ?, ?, ?, ?)
       `).run(post.id, post.user_hash, post.space_id, post.content, post.created_at, boolToDb(post.hidden));
+      refreshTrustLevel(userHash);
       return post;
     },
 
@@ -669,6 +741,7 @@ export function createStore(options = {}) {
         INSERT INTO comments (id, post_id, user_hash, content, created_at, hidden)
         VALUES (?, ?, ?, ?, ?, ?)
       `).run(comment.id, comment.post_id, comment.user_hash, comment.content, comment.created_at, boolToDb(comment.hidden));
+      refreshTrustLevel(userHash);
       return comment;
     },
 
@@ -861,6 +934,7 @@ export function createStore(options = {}) {
         reason: resolution.reason,
         created_at: moderationCase.resolved_at
       });
+      refreshTrustLevel(moderationCase.accused_hash);
       return moderationCase;
     },
 
@@ -922,6 +996,7 @@ export function createStore(options = {}) {
         }
         post.hidden = true;
         db.prepare('UPDATE posts SET hidden = 1 WHERE id = ?').run(targetId);
+        refreshTrustLevel(post.user_hash);
         return true;
       }
 
@@ -932,6 +1007,7 @@ export function createStore(options = {}) {
         }
         comment.hidden = true;
         db.prepare('UPDATE comments SET hidden = 1 WHERE id = ?').run(targetId);
+        refreshTrustLevel(comment.user_hash);
         return true;
       }
 
@@ -946,6 +1022,7 @@ export function createStore(options = {}) {
         }
         post.hidden = false;
         db.prepare('UPDATE posts SET hidden = 0 WHERE id = ?').run(targetId);
+        refreshTrustLevel(post.user_hash);
         return true;
       }
 
@@ -956,6 +1033,7 @@ export function createStore(options = {}) {
         }
         comment.hidden = false;
         db.prepare('UPDATE comments SET hidden = 0 WHERE id = ?').run(targetId);
+        refreshTrustLevel(comment.user_hash);
         return true;
       }
 
@@ -969,6 +1047,7 @@ export function createStore(options = {}) {
       }
 
       target.banned = true;
+      target.trust_level = 0;
       persistUser(target);
       addAuditEvent({
         id: nanoid(16),
@@ -989,6 +1068,7 @@ export function createStore(options = {}) {
 
       target.banned = false;
       persistUser(target);
+      refreshTrustLevel(targetHash);
       addAuditEvent({
         id: nanoid(16),
         operation: 'unban',

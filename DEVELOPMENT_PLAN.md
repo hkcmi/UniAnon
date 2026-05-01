@@ -79,10 +79,10 @@ Goal: make the MVP harder to abuse and closer to real community use.
 
 Goal: make governance more complete and closer to the project specification.
 
-- [ ] Implement trust-level calculation.
-- [ ] Track account age.
-- [ ] Track post/comment quality signals.
-- [ ] Track negative report/moderation history.
+- [x] Implement trust-level calculation.
+- [x] Track account age.
+- [x] Track post/comment quality signals.
+- [x] Track negative report/moderation history.
 - [ ] Add weighted report rules.
 - [ ] Add random jury selection.
 - [ ] Prevent jury conflicts of interest.

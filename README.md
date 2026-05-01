@@ -295,3 +295,14 @@ See [PRIVACY.md](PRIVACY.md) for the anonymity and email-delivery trust model.
 See [PRIVACY_ROADMAP.md](PRIVACY_ROADMAP.md) for the long-term privacy-first architecture plan.
 
 See [THREAT_MODEL.md](THREAT_MODEL.md) for the speech-protection threat model.
+
+## Trust Levels
+
+Trust levels are calculated from privacy-preserving community activity:
+
+- Account age.
+- Visible posts and comments.
+- Upheld moderation violations.
+- Protected `moderator` / `system_admin` roles.
+
+The Community Service calculates trust from `user_hash` activity and does not need plaintext email.
