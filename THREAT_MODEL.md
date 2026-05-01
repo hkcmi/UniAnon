@@ -230,6 +230,8 @@ Direct moderator bans are intentionally narrow. A moderator cannot ban themselve
 
 Reports use capped trust-based weight. Newer users can still report, but higher-trust reporters carry more weight. Protected users with `moderator` or `system_admin` roles require the higher `ADMIN_PROTECTION_APPROVAL_WEIGHT` before a case opens, reducing report floods against governance participants.
 
+Protected users also require the same higher violation vote weight before a jury sanction resolves, so the protection applies at both case-opening and decision time.
+
 ### User-Supplied Identity Leakage
 
 Users can still choose text that reveals themselves. UniAnon reduces accidental leakage by rejecting reserved system nicknames, URL-like nicknames, control characters, and obvious repeated-character spam, but it cannot guarantee users will never self-identify in content.

@@ -285,6 +285,8 @@ Ban a user hash. Requires a moderator session.
 
 Direct moderator bans cannot target the acting moderator or protected users with `moderator` / `system_admin` roles. Protected-user sanctions must go through governance and use `ADMIN_PROTECTION_APPROVAL_WEIGHT`.
 
+Protected users also require `ADMIN_PROTECTION_APPROVAL_WEIGHT` violation vote weight before a jury can approve a sanction.
+
 ### `GET /moderation/audit-log`
 
 Read moderation audit events. Requires a moderator session.
