@@ -48,7 +48,7 @@ Goal: make UniAnon usable on a local machine, not only through raw API calls.
   - [x] Report content.
   - [x] Governance case list.
   - [x] Jury voting page.
-  - [ ] Basic moderation/audit page.
+  - [x] Basic moderation/audit page.
 - [x] Add local dev command that starts API and frontend together.
 - [x] Update README with local usage instructions.
 
@@ -127,8 +127,8 @@ Goal: decide whether UniAnon remains standalone or becomes a NodeBB auth/governa
 Recommended next tasks:
 
 1. Add Docker Compose.
-2. Add basic moderation/audit page.
-3. Add Docker Compose.
+2. Add Docker Compose.
+3. Add production start command.
 4. Continue separating store logic into clearer repository/service modules.
 
 Suggested implementation order:

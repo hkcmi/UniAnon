@@ -80,6 +80,22 @@
             <h2>Governance</h2>
           </div>
           <div id="caseList" class="case-list"></div>
+          <div id="moderationPanel" class="moderation-panel hidden">
+            <div class="section-divider"></div>
+            <div class="panel-head">
+              <h2>Moderation</h2>
+              <button id="auditRefreshButton" class="icon-button" type="button" title="Refresh audit log">Audit</button>
+            </div>
+            <form id="banForm" class="stack">
+              <label for="banUserHashInput">User hash</label>
+              <input id="banUserHashInput" name="user_hash" type="text" placeholder="target user_hash" required>
+              <label for="banReasonInput">Reason</label>
+              <input id="banReasonInput" name="reason" type="text" placeholder="policy violation" required>
+              <button type="submit">Ban user</button>
+            </form>
+            <p id="moderationStatus" class="status"></p>
+            <div id="auditLogList" class="audit-log-list"></div>
+          </div>
         </aside>
       </section>
     </main>
@@ -117,6 +133,20 @@
           <button class="vote-violation" type="button">Violation</button>
           <button class="secondary vote-dismiss" type="button">Dismiss</button>
         </div>
+      </article>
+    </template>
+
+    <template id="auditTemplate">
+      <article class="audit-item">
+        <div class="item-head">
+          <strong class="audit-operation"></strong>
+          <span class="muted audit-time"></span>
+        </div>
+        <dl class="audit-meta">
+          <div><dt>Actor</dt><dd class="audit-actor"></dd></div>
+          <div><dt>Target</dt><dd class="audit-target"></dd></div>
+        </dl>
+        <p class="audit-reason"></p>
       </article>
     </template>
 

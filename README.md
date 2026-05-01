@@ -191,6 +191,8 @@ Ban a user hash. Requires a moderator session.
 
 Read moderation audit events. Requires a moderator session.
 
+The local web UI also shows moderation tools to users with the `moderator` or `system_admin` role.
+
 ## Security Notes
 
 - Never expose `SERVER_SECRET`.

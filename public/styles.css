@@ -193,6 +193,7 @@ h2 {
 
 .space-list,
 .case-list,
+.audit-log-list,
 .feed {
   display: grid;
   gap: 10px;
@@ -218,7 +219,8 @@ h2 {
 }
 
 .post-item,
-.case-item {
+.case-item,
+.audit-item {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -276,6 +278,46 @@ h2 {
 .case-actions {
   display: flex;
   gap: 8px;
+}
+
+.moderation-panel {
+  margin-top: 16px;
+}
+
+.section-divider {
+  height: 1px;
+  background: var(--line);
+  margin: 4px 0 16px;
+}
+
+.audit-log-list {
+  margin-top: 12px;
+}
+
+.audit-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0 0 8px;
+}
+
+.audit-meta div {
+  min-width: 0;
+}
+
+.audit-meta dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.audit-meta dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+.audit-reason {
+  color: var(--muted);
 }
 
 .hidden {

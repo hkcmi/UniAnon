@@ -250,3 +250,37 @@ test('restricts spaces by allowed email domain', async () => {
   const orgPosts = await orgList.json();
   assert.equal(orgPosts.posts.some((visiblePost) => visiblePost.id === post.id), true);
 });
+
+test('allows moderators to ban users and read audit events', async () => {
+  const moderator = await signup('audit-mod@example.edu', 'audit_mod');
+  const target = await signup('audit-target@example.edu', 'audit_target');
+
+  const moderatorUser = store.users.get(moderator.user.user_hash);
+  moderatorUser.roles.push('moderator');
+  store.persistUser(moderatorUser);
+
+  const banResponse = await fetch(`${baseUrl}/moderation/ban`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${moderator.sessionToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      user_hash: target.user.user_hash,
+      reason: 'Audit test ban'
+    })
+  });
+  assert.equal(banResponse.status, 201);
+  assert.equal(store.users.get(target.user.user_hash).banned, true);
+
+  const auditResponse = await fetch(`${baseUrl}/moderation/audit-log`, {
+    headers: { authorization: `Bearer ${moderator.sessionToken}` }
+  });
+  assert.equal(auditResponse.status, 200);
+  const { audit_log: auditLog } = await auditResponse.json();
+  assert.equal(auditLog.some((event) => {
+    return event.operation === 'ban'
+      && event.target_hash === target.user.user_hash
+      && event.reason === 'Audit test ban';
+  }), true);
+});

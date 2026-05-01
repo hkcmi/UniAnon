@@ -4,6 +4,7 @@ const state = {
   spaces: [],
   posts: [],
   cases: [],
+  auditLog: [],
   activeSpaceId: 'public'
 };
 
@@ -28,8 +29,16 @@ const elements = {
   postContent: document.querySelector('#postContent'),
   postList: document.querySelector('#postList'),
   caseList: document.querySelector('#caseList'),
+  moderationPanel: document.querySelector('#moderationPanel'),
+  auditRefreshButton: document.querySelector('#auditRefreshButton'),
+  banForm: document.querySelector('#banForm'),
+  banUserHashInput: document.querySelector('#banUserHashInput'),
+  banReasonInput: document.querySelector('#banReasonInput'),
+  moderationStatus: document.querySelector('#moderationStatus'),
+  auditLogList: document.querySelector('#auditLogList'),
   postTemplate: document.querySelector('#postTemplate'),
-  caseTemplate: document.querySelector('#caseTemplate')
+  caseTemplate: document.querySelector('#caseTemplate'),
+  auditTemplate: document.querySelector('#auditTemplate')
 };
 
 function authHeaders() {
@@ -71,10 +80,12 @@ function setStatus(element, message) {
 
 function updateSessionView() {
   const signedIn = Boolean(state.user);
+  const canModerate = Boolean(state.user?.roles.includes('moderator') || state.user?.roles.includes('system_admin'));
   elements.authPanel.classList.toggle('hidden', signedIn);
   elements.logoutButton.classList.toggle('hidden', !signedIn);
   elements.composerPanel.classList.toggle('hidden', !signedIn || !state.user.nickname);
   elements.nicknamePanel.classList.toggle('hidden', !signedIn || Boolean(state.user.nickname));
+  elements.moderationPanel.classList.toggle('hidden', !canModerate);
 
   if (!signedIn) {
     elements.sessionLine.textContent = 'Not signed in';
@@ -83,6 +94,18 @@ function updateSessionView() {
 
   const nickname = state.user.nickname || 'nickname required';
   elements.sessionLine.textContent = `${nickname} - ${state.user.domain_group} - trust ${state.user.trust_level}`;
+}
+
+function shortHash(value) {
+  if (!value) {
+    return 'none';
+  }
+
+  if (value.length <= 14) {
+    return value;
+  }
+
+  return `${value.slice(0, 8)}...${value.slice(-6)}`;
 }
 
 function renderSpaces() {
@@ -203,6 +226,32 @@ function renderCases() {
   }
 }
 
+function renderAuditLog() {
+  elements.auditLogList.replaceChildren();
+
+  if (!state.user?.roles.includes('moderator') && !state.user?.roles.includes('system_admin')) {
+    return;
+  }
+
+  if (state.auditLog.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'muted';
+    empty.textContent = 'No audit events.';
+    elements.auditLogList.append(empty);
+    return;
+  }
+
+  for (const event of state.auditLog) {
+    const node = elements.auditTemplate.content.firstElementChild.cloneNode(true);
+    node.querySelector('.audit-operation').textContent = event.operation;
+    node.querySelector('.audit-time').textContent = formatTime(event.created_at);
+    node.querySelector('.audit-actor').textContent = shortHash(event.actor_hash);
+    node.querySelector('.audit-target').textContent = shortHash(event.target_hash || event.target_id);
+    node.querySelector('.audit-reason').textContent = event.reason;
+    elements.auditLogList.append(node);
+  }
+}
+
 async function loadMe() {
   if (!state.token) {
     state.user = null;
@@ -254,11 +303,28 @@ async function loadCases() {
   renderCases();
 }
 
+async function loadAuditLog() {
+  if (!state.user?.roles.includes('moderator') && !state.user?.roles.includes('system_admin')) {
+    state.auditLog = [];
+    renderAuditLog();
+    return;
+  }
+
+  try {
+    const payload = await api('/moderation/audit-log');
+    state.auditLog = payload.audit_log;
+  } catch {
+    state.auditLog = [];
+  }
+  renderAuditLog();
+}
+
 async function refreshAll() {
   await loadMe();
   await loadSpaces();
   await loadPosts();
   await loadCases();
+  await loadAuditLog();
 }
 
 async function reportTarget(targetType, targetId) {
@@ -354,6 +420,26 @@ elements.postForm.addEventListener('submit', async (event) => {
   await loadPosts();
 });
 
+elements.banForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  setStatus(elements.moderationStatus, 'Banning...');
+  try {
+    await api('/moderation/ban', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_hash: elements.banUserHashInput.value,
+        reason: elements.banReasonInput.value
+      })
+    });
+    elements.banUserHashInput.value = '';
+    elements.banReasonInput.value = '';
+    setStatus(elements.moderationStatus, 'User banned.');
+    await loadAuditLog();
+  } catch (error) {
+    setStatus(elements.moderationStatus, error.payload?.error || error.message);
+  }
+});
+
 elements.logoutButton.addEventListener('click', async () => {
   state.token = '';
   state.user = null;
@@ -363,6 +449,7 @@ elements.logoutButton.addEventListener('click', async () => {
 });
 
 elements.refreshButton.addEventListener('click', refreshAll);
+elements.auditRefreshButton.addEventListener('click', loadAuditLog);
 
 refreshAll().catch((error) => {
   console.error(error);
