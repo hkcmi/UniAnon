@@ -28,6 +28,8 @@ The next major milestone is:
 
 Privacy is the highest-level product goal. Any feature that touches identity, auth, logs, moderation, or analytics must preserve or improve the privacy model documented in `PRIVACY.md` and `PRIVACY_ROADMAP.md`.
 
+The threat model in `THREAT_MODEL.md` is a product constraint, not optional documentation.
+
 ## Phase 1: Local Usable MVP
 
 Goal: make UniAnon usable on a local machine, not only through raw API calls.
@@ -113,6 +115,7 @@ Goal: move beyond email-visible login toward stronger privacy-preserving members
 - [ ] Research anonymous credentials / blind signatures.
 - [ ] Define duplicate-prevention model for anonymous credentials.
 - [ ] Define revocation model for anonymous credentials.
+- [x] Define speech-protection threat model.
 
 ## Phase 5: Deployment
 
@@ -141,9 +144,9 @@ Goal: decide whether UniAnon remains standalone or becomes a NodeBB auth/governa
 
 Recommended next tasks:
 
-1. Add auth event logging with email redaction.
-2. Add magic link expiration tests.
-3. Draft Auth Service / Community Service split.
+1. Draft Auth Service / Community Service split.
+2. Define nullifier and duplicate-prevention model.
+3. Add auth event logging with email redaction.
 4. Continue separating store logic into clearer repository/service modules.
 
 Suggested implementation order:

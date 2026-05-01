@@ -1,6 +1,6 @@
 # UniAnon Privacy Roadmap
 
-UniAnon's highest product goal is privacy-preserving community access.
+UniAnon's highest product goal is privacy-preserving community access for speech protection.
 
 The project should not overclaim anonymity. Instead, it should make every identity boundary explicit, minimize data exposure at each boundary, and gradually replace email-visible login with stronger privacy-preserving membership proofs.
 
@@ -8,7 +8,9 @@ The project should not overclaim anonymity. Instead, it should make every identi
 
 UniAnon should prove membership without revealing identity to the community.
 
-In the long term, UniAnon should also reduce how much the login infrastructure can correlate real email addresses with community activity.
+In the long term, UniAnon must also reduce how much the login infrastructure can correlate real email addresses with community activity.
+
+See `THREAT_MODEL.md` for the non-negotiable privacy requirements.
 
 ## Current Privacy Level
 
@@ -110,6 +112,8 @@ Tasks:
 
 Goal: prove "I am a member of this organization" without revealing which member.
 
+Status: target architecture for highest privacy protection.
+
 Possible approaches:
 
 - blind signatures
@@ -159,6 +163,6 @@ The next privacy-focused implementation steps should be:
 
 1. Add auth event logging with email redaction.
 2. Add magic-link expiration tests.
-3. Add an Auth Service / Community Service split design.
-4. Add an OIDC minimal-claims prototype.
-5. Research anonymous credentials for long-term privacy.
+3. Draft the Auth Service / Community Service split.
+4. Define the nullifier and duplicate-prevention model.
+5. Research anonymous credentials as the target privacy architecture.

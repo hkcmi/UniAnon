@@ -241,3 +241,5 @@ The local web UI also shows moderation tools to users with the `moderator` or `s
 See [PRIVACY.md](PRIVACY.md) for the anonymity and email-delivery trust model.
 
 See [PRIVACY_ROADMAP.md](PRIVACY_ROADMAP.md) for the long-term privacy-first architecture plan.
+
+See [THREAT_MODEL.md](THREAT_MODEL.md) for the speech-protection threat model.
