@@ -24,6 +24,60 @@ app.use(helmet());
 app.use(express.json({ limit: '64kb' }));
 app.use(express.static('public'));
 
+const errorMessages = {
+  appeal_not_found: 'Appeal not found.',
+  appeal_not_open: 'This appeal is no longer open.',
+  appealable_target_not_found: 'That item is not currently appealable.',
+  authentication_required: 'Sign in to continue.',
+  cannot_appeal_other_user_target: 'You can only appeal actions against your own account or content.',
+  cannot_ban_self: 'Moderators cannot ban themselves.',
+  cannot_report_self: 'You cannot report your own account or content.',
+  cannot_vote_on_own_appeal: 'You cannot vote on your own appeal.',
+  cannot_vote_on_own_case: 'You cannot vote on your own case.',
+  case_not_found: 'Case not found.',
+  case_not_open: 'This case is no longer open.',
+  domain_not_allowed: 'This email domain is not allowed on this UniAnon instance.',
+  duplicate_appeal: 'An open appeal already exists for this target.',
+  duplicate_report: 'You have already reported this target.',
+  duplicate_vote: 'You have already voted.',
+  invalid_action: 'Choose a supported moderation action.',
+  invalid_content: 'Content must be non-empty, under 5000 characters, and free of control characters or repeated-character noise.',
+  invalid_decision: 'Choose a supported decision.',
+  invalid_email: 'Enter a valid email address.',
+  invalid_nickname: 'Nicknames must be 3-32 safe characters and cannot use reserved or URL-like names.',
+  invalid_or_expired_assertion: 'This membership proof is invalid or expired.',
+  invalid_or_expired_token: 'This magic link token is invalid or expired.',
+  invalid_reason: 'Enter a reason for this appeal.',
+  invalid_space_name: 'Space names must be 2-80 characters.',
+  invalid_target_type: 'Choose a supported target type.',
+  moderator_required: 'Moderator access is required.',
+  nickname_required: 'Set a nickname before continuing.',
+  nickname_unavailable_or_already_set: 'That nickname is unavailable or has already been set.',
+  not_found: 'Not found.',
+  post_not_found: 'Post not found.',
+  protected_user_requires_governance: 'Protected users can only be sanctioned through governance.',
+  rate_limited: 'Too many requests. Please wait and try again.',
+  space_access_denied: 'You do not have access to this space.',
+  target_already_banned: 'That user is already banned.',
+  target_not_found: 'Target not found.',
+  trusted_juror_required: 'Trusted-user access is required.',
+  user_banned: 'This account is banned. You may open an appeal if eligible.'
+};
+
+app.use((req, res, next) => {
+  const originalJson = res.json.bind(res);
+  res.json = (body) => {
+    if (body && typeof body === 'object' && body.error && !body.message) {
+      return originalJson({
+        ...body,
+        message: errorMessages[body.error] || 'Request failed.'
+      });
+    }
+    return originalJson(body);
+  };
+  next();
+});
+
 function requireAuth(req, res, next) {
   const header = req.get('authorization') || '';
   const token = header.startsWith('Bearer ') ? header.slice('Bearer '.length) : null;

@@ -63,6 +63,10 @@ test('rejects unapproved email domains', async () => {
   });
 
   assert.equal(response.status, 403);
+  const body = await response.json();
+  assert.equal(body.error, 'domain_not_allowed');
+  assert.equal(typeof body.message, 'string');
+  assert.match(body.message, /domain/i);
 });
 
 test('serves the local web UI', async () => {

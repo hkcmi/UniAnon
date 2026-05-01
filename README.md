@@ -123,6 +123,8 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for the full local deployment guide.
 
 ## API Sketch
 
+Error responses keep a stable machine-readable `error` code and include a user-facing `message`.
+
 ### `POST /auth/request-link`
 
 Request a magic link token for an allowed email domain.

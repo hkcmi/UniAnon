@@ -57,7 +57,7 @@ async function api(path, options = {}) {
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const error = new Error(payload.error || 'request_failed');
+    const error = new Error(payload.message || payload.error || 'Request failed.');
     error.status = response.status;
     error.payload = payload;
     throw error;
@@ -341,7 +341,7 @@ async function reportTarget(targetType, targetId) {
       await loadCases();
     }
   } catch (error) {
-    alert(error.payload?.error || error.message);
+    alert(error.payload?.message || error.payload?.error || error.message);
   }
 }
 
@@ -354,7 +354,7 @@ async function vote(caseId, decision, action) {
     await loadPosts();
     await loadCases();
   } catch (error) {
-    alert(error.payload?.error || error.message);
+    alert(error.payload?.message || error.payload?.error || error.message);
   }
 }
 
@@ -373,7 +373,7 @@ elements.requestLinkForm.addEventListener('submit', async (event) => {
       setStatus(elements.authStatus, 'Magic link sent.');
     }
   } catch (error) {
-    setStatus(elements.authStatus, error.payload?.error || error.message);
+    setStatus(elements.authStatus, error.payload?.message || error.payload?.error || error.message);
   }
 });
 
@@ -391,7 +391,7 @@ elements.verifyForm.addEventListener('submit', async (event) => {
     setStatus(elements.authStatus, '');
     await refreshAll();
   } catch (error) {
-    setStatus(elements.authStatus, error.payload?.error || error.message);
+    setStatus(elements.authStatus, error.payload?.message || error.payload?.error || error.message);
   }
 });
 
@@ -407,7 +407,7 @@ elements.nicknameForm.addEventListener('submit', async (event) => {
     setStatus(elements.nicknameStatus, '');
     await refreshAll();
   } catch (error) {
-    setStatus(elements.nicknameStatus, error.payload?.error || error.message);
+    setStatus(elements.nicknameStatus, error.payload?.message || error.payload?.error || error.message);
   }
 });
 
@@ -440,7 +440,7 @@ elements.banForm.addEventListener('submit', async (event) => {
     setStatus(elements.moderationStatus, 'User banned.');
     await loadAuditLog();
   } catch (error) {
-    setStatus(elements.moderationStatus, error.payload?.error || error.message);
+    setStatus(elements.moderationStatus, error.payload?.message || error.payload?.error || error.message);
   }
 });
 

@@ -73,7 +73,7 @@ Goal: make the MVP harder to abuse and closer to real community use.
 - [x] Add stronger validation for content and nicknames.
 - [x] Add moderator action safeguards.
 - [x] Add appeal case model.
-- [ ] Add user-facing error messages.
+- [x] Add user-facing error messages.
 
 ## Phase 3: Reputation and Governance
 
