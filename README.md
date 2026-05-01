@@ -13,6 +13,7 @@ UniAnon combines privacy-preserving identity with reputation-based governance to
 - Communities can restrict membership by allowed email domains.
 - Moderation power is constrained through audit logs and governance-ready workflows.
 - The system can support multiple organizations and domain groups.
+- Privacy is the primary product goal; identity exposure boundaries must be explicit and minimized.
 
 ## MVP Scope
 
@@ -238,3 +239,5 @@ The local web UI also shows moderation tools to users with the `moderator` or `s
 - SQLite is intended for local MVP development. Production can move the same store boundary to PostgreSQL later.
 
 See [PRIVACY.md](PRIVACY.md) for the anonymity and email-delivery trust model.
+
+See [PRIVACY_ROADMAP.md](PRIVACY_ROADMAP.md) for the long-term privacy-first architecture plan.

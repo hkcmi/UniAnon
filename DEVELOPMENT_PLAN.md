@@ -26,6 +26,8 @@ The next major milestone is:
 
 > A developer can clone the repo, run one command, open a local web app, register with a dev magic link, create posts/comments, report content, and test governance flows.
 
+Privacy is the highest-level product goal. Any feature that touches identity, auth, logs, moderation, or analytics must preserve or improve the privacy model documented in `PRIVACY.md` and `PRIVACY_ROADMAP.md`.
+
 ## Phase 1: Local Usable MVP
 
 Goal: make UniAnon usable on a local machine, not only through raw API calls.
@@ -99,6 +101,19 @@ Goal: replace dev-only magic token responses with real email delivery.
 - [ ] Add auth event logging.
 - [x] Document auth privacy guarantees.
 
+## Phase 4.5: Privacy-First Identity
+
+Goal: move beyond email-visible login toward stronger privacy-preserving membership proofs.
+
+- [ ] Add auth event logging with email redaction.
+- [ ] Split Auth Service and Community Service design.
+- [ ] Define signed membership assertion format.
+- [ ] Add OIDC minimal-claims prototype.
+- [ ] Research SAML support.
+- [ ] Research anonymous credentials / blind signatures.
+- [ ] Define duplicate-prevention model for anonymous credentials.
+- [ ] Define revocation model for anonymous credentials.
+
 ## Phase 5: Deployment
 
 Goal: make the project easy to run outside the developer machine.
@@ -126,9 +141,9 @@ Goal: decide whether UniAnon remains standalone or becomes a NodeBB auth/governa
 
 Recommended next tasks:
 
-1. Add stronger user-facing rate-limit messages.
-2. Add auth event logging.
-3. Add magic link expiration tests.
+1. Add auth event logging with email redaction.
+2. Add magic link expiration tests.
+3. Draft Auth Service / Community Service split.
 4. Continue separating store logic into clearer repository/service modules.
 
 Suggested implementation order:
