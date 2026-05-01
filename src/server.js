@@ -8,11 +8,13 @@ import {
   normalizeEmail,
   publicUser
 } from './identity.js';
+import { createMailer } from './mailer.js';
 import { createRateLimiter } from './rate-limit.js';
 import { createStore } from './store.js';
 
 export const store = createStore();
 export const rateLimiter = createRateLimiter();
+export const mailer = createMailer();
 export const app = express();
 
 app.use(helmet());
@@ -271,10 +273,10 @@ app.post('/auth/request-link', async (req, res) => {
   }
 
   const token = store.createMagicToken(email, getDomain(email), config.tokenTtlMs);
+  const deliveryResult = await mailer.sendMagicLink(email, token);
   return res.status(201).json({
     ok: true,
-    delivery: 'dev_response',
-    token
+    ...deliveryResult
   });
 });
 

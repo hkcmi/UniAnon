@@ -73,12 +73,14 @@ REDIS_URL=
 SERVER_SECRET=replace-me-with-a-long-random-secret
 SESSION_TTL_MS=604800000
 ALLOWED_DOMAINS=example.edu,example.org,company.com
+EMAIL_DELIVERY=dev
+APP_BASE_URL=http://localhost:3000
 REPORT_WEIGHT_THRESHOLD=3
 JURY_APPROVAL_WEIGHT=3
 ADMIN_PROTECTION_APPROVAL_WEIGHT=8
 ```
 
-For local development, `/auth/request-link` returns the verification token in the response. In production, this should be sent by an email provider and never returned to the client.
+For local development, `/auth/request-link` returns the verification token in the response. Set `EMAIL_DELIVERY=smtp` to send magic links through SMTP instead.
 
 By default, local data is stored in `data/unianon.sqlite`. Tests use an in-memory SQLite database.
 

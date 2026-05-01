@@ -36,12 +36,43 @@ SERVER_SECRET=replace-me-with-a-long-random-secret
 SESSION_TTL_MS=604800000
 ALLOWED_DOMAINS=example.edu,example.org,company.com
 MAGIC_TOKEN_TTL_MS=900000
+APP_BASE_URL=http://localhost:3000
+EMAIL_DELIVERY=dev
+EMAIL_FROM=UniAnon <no-reply@localhost>
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=
+SMTP_PASS=
 REPORT_WEIGHT_THRESHOLD=3
 JURY_APPROVAL_WEIGHT=3
 ADMIN_PROTECTION_APPROVAL_WEIGHT=8
 ```
 
 Use a long random `SERVER_SECRET` for any shared environment. Changing it will change all HMAC user hashes, so treat it as persistent instance identity.
+
+## Email Delivery
+
+Dev mode returns magic tokens in API responses:
+
+```bash
+EMAIL_DELIVERY=dev
+```
+
+SMTP mode sends magic links by email and does not return tokens:
+
+```bash
+EMAIL_DELIVERY=smtp
+APP_BASE_URL=https://your-unianon.example
+EMAIL_FROM=UniAnon <no-reply@your-unianon.example>
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-smtp-user
+SMTP_PASS=your-smtp-password
+```
+
+Use `SMTP_SECURE=true` for providers that require implicit TLS, usually on port `465`.
 
 ## Local Npm Run
 
@@ -196,8 +227,8 @@ docker compose up --build
 
 ## Current Limits
 
-- Magic links are dev-only and returned in API responses.
-- There is no real SMTP provider yet.
+- Dev mode returns magic links in API responses.
+- SMTP delivery is available, but email templates are still basic text emails.
 - Sessions expire according to `SESSION_TTL_MS`; browser-side refresh handling is still basic.
 - Redis rate limiting is implemented for key write paths, but policy tuning is still early.
 - SQLite stores session token hashes, not plaintext session tokens.

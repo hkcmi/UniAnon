@@ -13,6 +13,16 @@ export const config = {
     .map((domain) => domain.trim().toLowerCase())
     .filter(Boolean),
   tokenTtlMs: Number(process.env.MAGIC_TOKEN_TTL_MS || 15 * 60 * 1000),
+  appBaseUrl: process.env.APP_BASE_URL || `http://localhost:${process.env.PORT || 3000}`,
+  emailDelivery: process.env.EMAIL_DELIVERY || 'dev',
+  emailFrom: process.env.EMAIL_FROM || 'UniAnon <no-reply@localhost>',
+  smtp: {
+    host: process.env.SMTP_HOST || '',
+    port: Number(process.env.SMTP_PORT || 587),
+    secure: process.env.SMTP_SECURE === 'true',
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || ''
+  },
   reportWeightThreshold: Number(process.env.REPORT_WEIGHT_THRESHOLD || 3),
   juryApprovalWeight: Number(process.env.JURY_APPROVAL_WEIGHT || 3),
   adminProtectionApprovalWeight: Number(process.env.ADMIN_PROTECTION_APPROVAL_WEIGHT || 8),

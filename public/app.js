@@ -366,8 +366,12 @@ elements.requestLinkForm.addEventListener('submit', async (event) => {
       method: 'POST',
       body: JSON.stringify({ email: elements.emailInput.value })
     });
-    elements.tokenInput.value = payload.token;
-    setStatus(elements.authStatus, 'Token received.');
+    if (payload.token) {
+      elements.tokenInput.value = payload.token;
+      setStatus(elements.authStatus, 'Token received.');
+    } else {
+      setStatus(elements.authStatus, 'Magic link sent.');
+    }
   } catch (error) {
     setStatus(elements.authStatus, error.payload?.error || error.message);
   }

@@ -91,10 +91,10 @@ Goal: make governance more complete and closer to the project specification.
 
 Goal: replace dev-only magic token responses with real email delivery.
 
-- [ ] Add SMTP provider support.
+- [x] Add SMTP provider support.
 - [ ] Add SendGrid or similar provider option.
 - [ ] Add email templates.
-- [ ] Stop returning magic tokens in production.
+- [x] Stop returning magic tokens in SMTP mode.
 - [ ] Add magic link expiration tests.
 - [ ] Add auth event logging.
 - [ ] Document auth privacy guarantees.
@@ -126,7 +126,7 @@ Goal: decide whether UniAnon remains standalone or becomes a NodeBB auth/governa
 
 Recommended next tasks:
 
-1. Add SMTP provider support.
+1. Add email templates.
 2. Add stronger user-facing rate-limit messages.
 3. Add auth event logging.
 4. Continue separating store logic into clearer repository/service modules.
