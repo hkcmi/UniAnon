@@ -99,8 +99,8 @@ Goal: replace dev-only magic token responses with real email delivery.
 - [ ] Add SendGrid or similar provider option.
 - [x] Add email templates.
 - [x] Stop returning magic tokens in SMTP mode.
-- [ ] Add magic link expiration tests.
-- [ ] Add auth event logging.
+- [x] Add magic link expiration tests.
+- [x] Add auth event logging.
 - [x] Document auth privacy guarantees.
 
 ## Phase 4.5: Privacy-First Identity

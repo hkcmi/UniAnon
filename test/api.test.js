@@ -327,6 +327,21 @@ test('stores no plaintext email in magic token records', () => {
   }
 });
 
+test('rejects expired magic link tokens', async () => {
+  const token = store.createMagicToken('expired-subject', 'example.edu', -1, 'expired-nullifier');
+
+  const verify = await fetch(`${baseUrl}/auth/verify`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ token })
+  });
+
+  assert.equal(verify.status, 400);
+  const body = await verify.json();
+  assert.equal(body.error, 'invalid_or_expired_token');
+  assert.equal(store.users.has('expired-subject'), false);
+});
+
 test('stores auth events with redacted email digests only', async () => {
   const response = await fetch(`${baseUrl}/auth/request-link`, {
     method: 'POST',
