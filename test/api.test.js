@@ -632,6 +632,17 @@ test('allows moderators to ban users and read audit events', async () => {
       && event.target_hash === target.user.user_hash
       && event.reason === 'Audit test ban';
   }), true);
+
+  const publicAuditResponse = await fetch(`${baseUrl}/audit-log`);
+  assert.equal(publicAuditResponse.status, 200);
+  const { audit_log: publicAuditLog } = await publicAuditResponse.json();
+  const publicBan = publicAuditLog.find((event) => event.operation === 'ban' && event.reason === 'Audit test ban');
+  assert.notEqual(publicBan, undefined);
+  assert.equal(Object.hasOwn(publicBan, 'actor_hash'), false);
+  assert.equal(Object.hasOwn(publicBan, 'target_hash'), false);
+  assert.match(publicBan.actor_ref, /^[a-f0-9]{12}$/);
+  assert.match(publicBan.target_ref, /^[a-f0-9]{12}$/);
+  assert.notEqual(publicBan.target_ref, target.user.user_hash);
 });
 
 test('prevents direct moderator bans against protected users and self', async () => {

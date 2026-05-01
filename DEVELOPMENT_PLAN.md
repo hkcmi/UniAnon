@@ -89,7 +89,7 @@ Goal: make governance more complete and closer to the project specification.
 - [x] Add administrator protection thresholds.
 - [x] Add multi-party approval for high-impact actions.
 - [x] Add appeal workflow.
-- [ ] Add transparent audit views.
+- [x] Add transparent audit views.
 
 ## Phase 4: Email and Auth Productionization
 

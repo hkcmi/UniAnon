@@ -248,6 +248,10 @@ When a moderation case opens, UniAnon assigns a random jury from trusted users a
 
 High-impact actions can require distinct moderator/admin approvals before execution. The MVP applies this to restricted space creation so one moderator cannot unilaterally change access boundaries. Approval requests store pseudonymous approver hashes, operation metadata, and audit events, not emails.
 
+### Transparent Audit Views
+
+Public audit views redact raw actor and target hashes into short HMAC-derived references. This lets the community inspect governance operations without exposing stable raw identifiers that can be copied across private moderator views or database dumps.
+
 ## Acceptable Privacy Modes
 
 ### Mode 0: Development

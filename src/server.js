@@ -1,5 +1,6 @@
 import express from 'express';
 import helmet from 'helmet';
+import crypto from 'node:crypto';
 import { config } from './config.js';
 import {
   createEmailDigest,
@@ -214,6 +215,30 @@ function serializeApprovalRequest(request) {
     created_at: request.created_at,
     resolved_at: request.resolved_at,
     result: request.result
+  };
+}
+
+function publicAuditRef(value) {
+  if (!value) {
+    return null;
+  }
+
+  return crypto
+    .createHmac('sha256', config.serverSecret)
+    .update(`audit:${value}`)
+    .digest('hex')
+    .slice(0, 12);
+}
+
+function serializePublicAuditEvent(event) {
+  return {
+    id: event.id,
+    operation: event.operation,
+    actor_ref: publicAuditRef(event.actor_hash),
+    target_ref: publicAuditRef(event.target_hash || event.target_id),
+    target_type: event.target_type || null,
+    reason: event.reason,
+    created_at: event.created_at
   };
 }
 
@@ -977,6 +1002,14 @@ app.post('/moderation/ban', requireAuth, requireModerator, (req, res) => {
 
 app.get('/moderation/audit-log', requireAuth, requireModerator, (req, res) => {
   res.json({ audit_log: store.auditLog });
+});
+
+app.get('/audit-log', (req, res) => {
+  const auditLog = store.auditLog
+    .map(serializePublicAuditEvent)
+    .sort((a, b) => b.created_at.localeCompare(a.created_at));
+
+  res.json({ audit_log: auditLog });
 });
 
 app.use((req, res) => {

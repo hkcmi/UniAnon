@@ -293,6 +293,10 @@ Read moderation audit events. Requires a moderator session.
 
 The local web UI also shows moderation tools to users with the `moderator` or `system_admin` role.
 
+### `GET /audit-log`
+
+Read the public transparent audit log. This endpoint redacts raw actor and target hashes into short audit references, while preserving operation type, target type, reason, and timestamp.
+
 ## Security Notes
 
 - Never expose `SERVER_SECRET`.
