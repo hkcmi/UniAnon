@@ -120,6 +120,14 @@ Allowed Community inputs:
 - nullifier
 - public verification metadata
 
+Implemented MVP step:
+
+```text
+magic token -> signed membership assertion -> community session
+```
+
+The magic-token store keeps `subject_hash` and `domain_group`, not plaintext email.
+
 Disallowed Community inputs:
 
 - email

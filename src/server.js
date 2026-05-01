@@ -9,6 +9,7 @@ import {
   publicUser
 } from './identity.js';
 import { createMailer } from './mailer.js';
+import { createMembershipAssertion, verifyMembershipAssertion } from './membership-assertion.js';
 import { createRateLimiter } from './rate-limit.js';
 import { createStore } from './store.js';
 
@@ -262,7 +263,8 @@ app.post('/auth/request-link', async (req, res) => {
     return res.status(403).json({ error: 'domain_not_allowed' });
   }
 
-  const emailAllowed = await enforceRateLimit(req, res, 'magicLinkEmail', email);
+  const subjectHash = createUserHash(email, config.authSubjectSecret);
+  const emailAllowed = await enforceRateLimit(req, res, 'magicLinkEmail', subjectHash);
   if (!emailAllowed) {
     return;
   }
@@ -272,7 +274,7 @@ app.post('/auth/request-link', async (req, res) => {
     return;
   }
 
-  const token = store.createMagicToken(email, getDomain(email), config.tokenTtlMs);
+  const token = store.createMagicToken(subjectHash, getDomain(email), config.tokenTtlMs);
   const deliveryResult = await mailer.sendMagicLink(email, token);
   return res.status(201).json({
     ok: true,
@@ -286,9 +288,30 @@ app.post('/auth/verify', (req, res) => {
     return res.status(400).json({ error: 'invalid_or_expired_token' });
   }
 
-  const userHash = createUserHash(record.email, config.serverSecret);
-  const user = store.upsertUser(userHash, record.domain_group);
-  const sessionToken = store.createSession(userHash);
+  const membershipAssertion = createMembershipAssertion({
+    subjectHash: record.subject_hash,
+    domainGroup: record.domain_group
+  });
+  const user = store.upsertUser(record.subject_hash, record.domain_group);
+  const sessionToken = store.createSession(record.subject_hash);
+
+  return res.json({
+    session_token: sessionToken,
+    membership_assertion: membershipAssertion,
+    expires_in: Math.floor(config.sessionTtlMs / 1000),
+    user: publicUser(user),
+    nickname_required: !user.nickname
+  });
+});
+
+app.post('/auth/exchange', (req, res) => {
+  const assertion = verifyMembershipAssertion(req.body.membership_assertion);
+  if (!assertion) {
+    return res.status(400).json({ error: 'invalid_or_expired_assertion' });
+  }
+
+  const user = store.upsertUser(assertion.sub, assertion.domain_group);
+  const sessionToken = store.createSession(assertion.sub);
 
   return res.json({
     session_token: sessionToken,

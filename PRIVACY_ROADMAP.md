@@ -17,6 +17,7 @@ See `THREAT_MODEL.md` for the non-negotiable privacy requirements.
 Current MVP:
 
 - Users verify with an allowed email domain.
+- The auth boundary signs a membership assertion containing an anonymous subject and domain group.
 - The community stores `user_hash`, nickname, domain group, posts, comments, reports, governance cases, and audit records.
 - The community does not display email addresses.
 - The community does not store plaintext email addresses in user records.
@@ -56,7 +57,7 @@ The community service should not receive or store plaintext email.
 Tasks:
 
 - [ ] Create separate Auth Service boundary.
-- [ ] Define signed membership assertion format.
+- [x] Define signed membership assertion format.
 - [ ] Include domain group and pseudonymous subject, not plaintext email.
 - [ ] Rotate signing keys safely.
 - [ ] Restrict auth logs to redacted email or hashed email only.

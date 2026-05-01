@@ -109,7 +109,7 @@ Goal: move beyond email-visible login toward stronger privacy-preserving members
 
 - [ ] Add auth event logging with email redaction.
 - [ ] Split Auth Service and Community Service design.
-- [ ] Define signed membership assertion format.
+- [x] Define signed membership assertion format.
 - [ ] Add OIDC minimal-claims prototype.
 - [ ] Research SAML support.
 - [ ] Research anonymous credentials / blind signatures.
@@ -144,8 +144,8 @@ Goal: decide whether UniAnon remains standalone or becomes a NodeBB auth/governa
 
 Recommended next tasks:
 
-1. Draft Auth Service / Community Service split.
-2. Define nullifier and duplicate-prevention model.
+1. Define nullifier and duplicate-prevention model.
+2. Draft Auth Service / Community Service split.
 3. Add auth event logging with email redaction.
 4. Continue separating store logic into clearer repository/service modules.
 

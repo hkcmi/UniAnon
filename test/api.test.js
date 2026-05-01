@@ -87,9 +87,10 @@ test('supports signup, nickname, post, and comment flow', async () => {
     body: JSON.stringify({ token })
   });
   assert.equal(verify.status, 200);
-  const { session_token: sessionToken, user } = await verify.json();
+  const { session_token: sessionToken, membership_assertion: membershipAssertion, user } = await verify.json();
   assert.equal(user.domain_group, 'example.edu');
   assert.equal(user.nickname, null);
+  assert.equal(typeof membershipAssertion, 'string');
   assert.equal([...store.sessions.values()].some((session) => {
     return session.user_hash === user.user_hash && typeof session.expires_at === 'number';
   }), true);
@@ -132,6 +133,35 @@ test('supports signup, nickname, post, and comment flow', async () => {
   assert.equal(posts[0].comments.length, 1);
 });
 
+test('exchanges membership assertion without email', async () => {
+  const requestLink = await fetch(`${baseUrl}/auth/request-link`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email: 'assertion@example.edu' })
+  });
+  assert.equal(requestLink.status, 201);
+  const { token } = await requestLink.json();
+
+  const verify = await fetch(`${baseUrl}/auth/verify`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ token })
+  });
+  assert.equal(verify.status, 200);
+  const { membership_assertion: membershipAssertion, user } = await verify.json();
+
+  const exchange = await fetch(`${baseUrl}/auth/exchange`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ membership_assertion: membershipAssertion })
+  });
+  assert.equal(exchange.status, 200);
+  const exchanged = await exchange.json();
+  assert.equal(exchanged.user.user_hash, user.user_hash);
+  assert.equal(exchanged.user.domain_group, 'example.edu');
+  assert.equal(Object.hasOwn(exchanged.user, 'email'), false);
+});
+
 test('rejects expired sessions', async () => {
   const user = await signup('expired-session@example.edu', 'expired_session');
   const session = [...store.sessions.entries()].find(([, value]) => value.user_hash === user.user.user_hash);
@@ -162,6 +192,15 @@ test('stores only hashed session tokens', async () => {
 test('stores no plaintext email on user records', () => {
   for (const user of store.users.values()) {
     assert.equal(Object.hasOwn(user, 'email'), false);
+  }
+});
+
+test('stores no plaintext email in magic token records', () => {
+  const columns = store.db.prepare('PRAGMA table_info(magic_tokens)').all().map((column) => column.name);
+  assert.equal(columns.includes('email'), false);
+
+  for (const tokenRecord of store.magicTokens.values()) {
+    assert.equal(Object.hasOwn(tokenRecord, 'email'), false);
   }
 });
 

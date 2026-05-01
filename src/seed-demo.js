@@ -3,7 +3,7 @@ import { createUserHash, getDomain, normalizeEmail } from './identity.js';
 
 function ensureDemoUser(store, { email, nickname, trustLevel = 0, roles = [] }) {
   const normalizedEmail = normalizeEmail(email);
-  const userHash = createUserHash(normalizedEmail, config.serverSecret);
+  const userHash = createUserHash(normalizedEmail, config.authSubjectSecret);
   const user = store.upsertUser(userHash, getDomain(normalizedEmail));
 
   if (!user.nickname) {

@@ -142,7 +142,7 @@ function migrate(db) {
 
     CREATE TABLE IF NOT EXISTS magic_tokens (
       token TEXT PRIMARY KEY,
-      email TEXT NOT NULL,
+      subject_hash TEXT,
       domain_group TEXT NOT NULL,
       expires_at INTEGER NOT NULL
     );
@@ -232,6 +232,28 @@ function migrate(db) {
 
   db.prepare('DELETE FROM sessions WHERE token_hash IS NULL OR token_hash = ?').run('');
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_sessions_token_hash ON sessions(token_hash)');
+
+  const magicTokenColumns = db.prepare('PRAGMA table_info(magic_tokens)').all().map((column) => column.name);
+  if (!magicTokenColumns.includes('subject_hash') || magicTokenColumns.includes('email')) {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS magic_tokens_v2 (
+        token TEXT PRIMARY KEY,
+        subject_hash TEXT NOT NULL,
+        domain_group TEXT NOT NULL,
+        expires_at INTEGER NOT NULL
+      );
+    `);
+
+    if (magicTokenColumns.includes('subject_hash')) {
+      db.exec(`
+        INSERT OR IGNORE INTO magic_tokens_v2 (token, subject_hash, domain_group, expires_at)
+        SELECT token, subject_hash, domain_group, expires_at FROM magic_tokens WHERE subject_hash IS NOT NULL;
+      `);
+    }
+
+    db.exec('DROP TABLE magic_tokens');
+    db.exec('ALTER TABLE magic_tokens_v2 RENAME TO magic_tokens');
+  }
 }
 
 export function createStore(options = {}) {
@@ -313,7 +335,7 @@ export function createStore(options = {}) {
 
     for (const row of db.prepare('SELECT * FROM magic_tokens').all()) {
       magicTokens.set(row.token, {
-        email: row.email,
+        subject_hash: row.subject_hash,
         domain_group: row.domain_group,
         expires_at: row.expires_at
       });
@@ -382,16 +404,16 @@ export function createStore(options = {}) {
 
     persistUser,
 
-    createMagicToken(email, domainGroup, ttlMs) {
+    createMagicToken(subjectHash, domainGroup, ttlMs) {
       const token = nanoid(32);
       const record = {
-        email,
+        subject_hash: subjectHash,
         domain_group: domainGroup,
         expires_at: Date.now() + ttlMs
       };
       magicTokens.set(token, record);
-      db.prepare('INSERT INTO magic_tokens (token, email, domain_group, expires_at) VALUES (?, ?, ?, ?)')
-        .run(token, record.email, record.domain_group, record.expires_at);
+      db.prepare('INSERT INTO magic_tokens (token, subject_hash, domain_group, expires_at) VALUES (?, ?, ?, ?)')
+        .run(token, record.subject_hash, record.domain_group, record.expires_at);
       return token;
     },
 

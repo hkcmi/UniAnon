@@ -8,6 +8,9 @@ services:
       DATABASE_PATH: /app/data/unianon.sqlite
       REDIS_URL: redis://redis:6379
       SERVER_SECRET: ${SERVER_SECRET:-dev-only-change-me}
+      AUTH_SUBJECT_SECRET: ${AUTH_SUBJECT_SECRET:-dev-only-change-me}
+      MEMBERSHIP_ASSERTION_SECRET: ${MEMBERSHIP_ASSERTION_SECRET:-dev-only-change-me}
+      MEMBERSHIP_ASSERTION_TTL_MS: ${MEMBERSHIP_ASSERTION_TTL_MS:-300000}
       SESSION_TTL_MS: ${SESSION_TTL_MS:-604800000}
       ALLOWED_DOMAINS: ${ALLOWED_DOMAINS:-example.edu,example.org,company.com}
       MAGIC_TOKEN_TTL_MS: ${MAGIC_TOKEN_TTL_MS:-900000}

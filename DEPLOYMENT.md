@@ -33,6 +33,9 @@ PORT=3000
 DATABASE_PATH=data/unianon.sqlite
 REDIS_URL=
 SERVER_SECRET=replace-me-with-a-long-random-secret
+AUTH_SUBJECT_SECRET=replace-me-with-a-long-random-auth-subject-secret
+MEMBERSHIP_ASSERTION_SECRET=replace-me-with-a-long-random-assertion-secret
+MEMBERSHIP_ASSERTION_TTL_MS=300000
 SESSION_TTL_MS=604800000
 ALLOWED_DOMAINS=example.edu,example.org,company.com
 MAGIC_TOKEN_TTL_MS=900000
@@ -49,7 +52,7 @@ JURY_APPROVAL_WEIGHT=3
 ADMIN_PROTECTION_APPROVAL_WEIGHT=8
 ```
 
-Use a long random `SERVER_SECRET` for any shared environment. Changing it will change all HMAC user hashes, so treat it as persistent instance identity.
+Use long random secrets for any shared environment. `AUTH_SUBJECT_SECRET` controls the stable anonymous subject derived after email verification. Changing it will change user identities, so treat it as persistent instance identity. `MEMBERSHIP_ASSERTION_SECRET` signs short-lived membership assertions passed from the auth boundary to the community boundary.
 
 ## Email Delivery
 
@@ -234,6 +237,7 @@ docker compose up --build
 - Sessions expire according to `SESSION_TTL_MS`; browser-side refresh handling is still basic.
 - Redis rate limiting is implemented for key write paths, but policy tuning is still early.
 - SQLite stores session token hashes, not plaintext session tokens.
+- Magic-token records store anonymous subject hashes, not plaintext email.
 - SQLite is intended for local MVP use.
 - The current app is a standalone MVP, not a NodeBB plugin yet.
 

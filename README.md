@@ -72,6 +72,8 @@ PORT=3000
 DATABASE_PATH=data/unianon.sqlite
 REDIS_URL=
 SERVER_SECRET=replace-me-with-a-long-random-secret
+AUTH_SUBJECT_SECRET=replace-me-with-a-long-random-auth-subject-secret
+MEMBERSHIP_ASSERTION_SECRET=replace-me-with-a-long-random-assertion-secret
 SESSION_TTL_MS=604800000
 ALLOWED_DOMAINS=example.edu,example.org,company.com
 EMAIL_DELIVERY=dev
@@ -128,10 +130,18 @@ Request a magic link token for an allowed email domain.
 
 ### `POST /auth/verify`
 
-Verify a magic token and receive a session token.
+Verify a magic token and receive a signed membership assertion plus a session token.
 
 ```json
 { "token": "dev-token" }
+```
+
+### `POST /auth/exchange`
+
+Exchange a signed membership assertion for a community session. The assertion contains an anonymous subject and domain group, not an email address.
+
+```json
+{ "membership_assertion": "signed-assertion" }
 ```
 
 ### `POST /users/nickname`
@@ -234,7 +244,9 @@ The local web UI also shows moderation tools to users with the `moderator` or `s
 ## Security Notes
 
 - Never expose `SERVER_SECRET`.
+- Use separate `AUTH_SUBJECT_SECRET` and `MEMBERSHIP_ASSERTION_SECRET` outside local demos.
 - Do not store plaintext emails in the forum/content service.
+- Pending magic-token records store anonymous subject hashes, not plaintext email.
 - Session tokens are returned once to clients; SQLite stores only SHA-256 token hashes.
 - SQLite is intended for local MVP development. Production can move the same store boundary to PostgreSQL later.
 

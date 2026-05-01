@@ -11,13 +11,14 @@ Inside the community app:
 - Governance cases use `user_hash`, not email addresses.
 - The forum/content database does not need plaintext email addresses.
 - Session tokens are stored as SHA-256 hashes.
-- User identity is derived from:
+- Community identity is derived from a signed membership assertion subject:
 
 ```text
-user_hash = HMAC_SHA256(email, server_secret)
+subject_hash = HMAC_SHA256(email, auth_subject_secret)
+membership_assertion = sign({ subject_hash, domain_group, exp })
 ```
 
-This means admins and moderators can govern stable anonymous accounts without directly seeing the user's email address in normal community workflows.
+The Community Service uses the assertion subject as `user_hash`. This means admins and moderators can govern stable anonymous accounts without directly seeing the user's email address in normal community workflows.
 
 ## What UniAnon Cannot Hide
 
@@ -82,7 +83,7 @@ Minimum safeguards:
 For stronger separation, deploy Auth Service separately from the community app:
 
 - Auth Service handles email and magic links.
-- Community Service receives only `user_hash`, nickname, domain group, roles, and session state.
+- Community Service receives only signed membership assertions, `user_hash`, nickname, domain group, roles, and session state.
 - Community moderators do not get access to Auth Service logs.
 
 This does not hide email from the Auth Service or SMTP provider, but it reduces who can correlate email with community activity.
