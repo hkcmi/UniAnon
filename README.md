@@ -337,6 +337,8 @@ See [IDENTITY_RESEARCH.md](IDENTITY_RESEARCH.md) for OIDC, SAML, and anonymous-c
 
 See [PRODUCTION_PRIVACY_CHECKLIST.md](PRODUCTION_PRIVACY_CHECKLIST.md) before running a real community or privacy-sensitive pilot.
 
+See [BACKUP_RESTORE.md](BACKUP_RESTORE.md) for SQLite backup, restore, and restore-drill procedures.
+
 ## Trust Levels
 
 Trust levels are calculated from privacy-preserving community activity:

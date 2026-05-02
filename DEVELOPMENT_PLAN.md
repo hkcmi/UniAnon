@@ -139,7 +139,7 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 - [x] Complete OIDC callback and ID token verification.
 - [x] Improve standalone governance/admin UI.
 - [x] Add structured database migration versioning.
-- [ ] Add backup and restore documentation.
+- [x] Add backup and restore documentation.
 - [x] Add production privacy checklist.
 - [ ] Keep NodeBB bridge as an optional future integration, not a core dependency.
 
@@ -147,10 +147,10 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 
 Recommended next tasks:
 
-1. Add backup and restore documentation.
-2. Keep NodeBB bridge as an optional future integration, not a core dependency.
-3. Add deployment hardening notes for reverse proxy and TLS.
-4. Add production runbook for incident response and secret rotation.
+1. Keep NodeBB bridge as an optional future integration, not a core dependency.
+2. Add deployment hardening notes for reverse proxy and TLS.
+3. Add production runbook for incident response and secret rotation.
+4. Add admin-facing setup guide for first community launch.
 
 Suggested implementation order:
 

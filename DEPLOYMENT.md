@@ -181,6 +181,8 @@ Rate-limit storage:
 
 The app loads SQLite records into memory at startup and writes changes back to SQLite during API operations. Schema migrations are versioned in the `schema_migrations` table and run automatically before records are loaded. If an external script changes the database while the app is running, restart the app.
 
+For backup, restore, and restore-drill procedures, see [BACKUP_RESTORE.md](BACKUP_RESTORE.md).
+
 ## Demo Accounts
 
 After running `npm run seed:demo`, use these emails in the web UI:

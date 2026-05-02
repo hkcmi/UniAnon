@@ -139,6 +139,7 @@ PRAGMA table_info(auth_events);
 - [ ] Backups are encrypted at rest.
 - [ ] Backup retention is documented.
 - [ ] Restore has been tested into a non-production environment.
+- [ ] [BACKUP_RESTORE.md](BACKUP_RESTORE.md) has been followed for the latest restore drill.
 - [ ] Restored database keeps the same secret set when account continuity is required.
 - [ ] Database dumps are treated as sensitive, even without plaintext email.
 - [ ] External scripts do not mutate the database while the app process is running.
