@@ -163,140 +163,149 @@ function rowToApprovalRequest(row) {
   };
 }
 
-function migrate(db) {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      user_hash TEXT PRIMARY KEY,
-      nullifier TEXT UNIQUE,
-      nickname TEXT UNIQUE,
-      domain_group TEXT NOT NULL,
-      trust_level INTEGER NOT NULL DEFAULT 0,
-      roles TEXT NOT NULL DEFAULT '[]',
-      created_at TEXT NOT NULL,
-      banned INTEGER NOT NULL DEFAULT 0
-    );
+const migrations = [
+  {
+    version: 1,
+    name: 'initial_schema',
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS users (
+          user_hash TEXT PRIMARY KEY,
+          nullifier TEXT UNIQUE,
+          nickname TEXT UNIQUE,
+          domain_group TEXT NOT NULL,
+          trust_level INTEGER NOT NULL DEFAULT 0,
+          roles TEXT NOT NULL DEFAULT '[]',
+          created_at TEXT NOT NULL,
+          banned INTEGER NOT NULL DEFAULT 0
+        );
 
-    CREATE TABLE IF NOT EXISTS sessions (
-      token TEXT,
-      token_hash TEXT UNIQUE,
-      user_hash TEXT NOT NULL,
-      created_at TEXT NOT NULL,
-      expires_at INTEGER NOT NULL
-    );
+        CREATE TABLE IF NOT EXISTS sessions (
+          token TEXT,
+          token_hash TEXT UNIQUE,
+          user_hash TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          expires_at INTEGER NOT NULL
+        );
 
-    CREATE TABLE IF NOT EXISTS magic_tokens (
-      token TEXT PRIMARY KEY,
-      subject_hash TEXT,
-      nullifier TEXT,
-      domain_group TEXT NOT NULL,
-      expires_at INTEGER NOT NULL
-    );
+        CREATE TABLE IF NOT EXISTS magic_tokens (
+          token TEXT PRIMARY KEY,
+          subject_hash TEXT,
+          nullifier TEXT,
+          domain_group TEXT NOT NULL,
+          expires_at INTEGER NOT NULL
+        );
 
-    CREATE TABLE IF NOT EXISTS spaces (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      allowed_domains TEXT NOT NULL DEFAULT '[]',
-      created_at TEXT NOT NULL
-    );
+        CREATE TABLE IF NOT EXISTS spaces (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          allowed_domains TEXT NOT NULL DEFAULT '[]',
+          created_at TEXT NOT NULL
+        );
 
-    CREATE TABLE IF NOT EXISTS posts (
-      id TEXT PRIMARY KEY,
-      user_hash TEXT NOT NULL,
-      space_id TEXT NOT NULL,
-      content TEXT NOT NULL,
-      created_at TEXT NOT NULL,
-      hidden INTEGER NOT NULL DEFAULT 0
-    );
+        CREATE TABLE IF NOT EXISTS posts (
+          id TEXT PRIMARY KEY,
+          user_hash TEXT NOT NULL,
+          space_id TEXT NOT NULL,
+          content TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          hidden INTEGER NOT NULL DEFAULT 0
+        );
 
-    CREATE TABLE IF NOT EXISTS comments (
-      id TEXT PRIMARY KEY,
-      post_id TEXT NOT NULL,
-      user_hash TEXT NOT NULL,
-      content TEXT NOT NULL,
-      created_at TEXT NOT NULL,
-      hidden INTEGER NOT NULL DEFAULT 0
-    );
+        CREATE TABLE IF NOT EXISTS comments (
+          id TEXT PRIMARY KEY,
+          post_id TEXT NOT NULL,
+          user_hash TEXT NOT NULL,
+          content TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          hidden INTEGER NOT NULL DEFAULT 0
+        );
 
-    CREATE TABLE IF NOT EXISTS reports (
-      id TEXT PRIMARY KEY,
-      actor_hash TEXT NOT NULL,
-      target_type TEXT NOT NULL,
-      target_id TEXT NOT NULL,
-      reason TEXT NOT NULL,
-      weight INTEGER NOT NULL,
-      created_at TEXT NOT NULL,
-      UNIQUE(actor_hash, target_type, target_id)
-    );
+        CREATE TABLE IF NOT EXISTS reports (
+          id TEXT PRIMARY KEY,
+          actor_hash TEXT NOT NULL,
+          target_type TEXT NOT NULL,
+          target_id TEXT NOT NULL,
+          reason TEXT NOT NULL,
+          weight INTEGER NOT NULL,
+          created_at TEXT NOT NULL,
+          UNIQUE(actor_hash, target_type, target_id)
+        );
 
-    CREATE TABLE IF NOT EXISTS moderation_cases (
-      id TEXT PRIMARY KEY,
-      target_type TEXT NOT NULL,
-      target_id TEXT NOT NULL,
-      accused_hash TEXT NOT NULL,
-      report_ids TEXT NOT NULL DEFAULT '[]',
-      juror_hashes TEXT NOT NULL DEFAULT '[]',
-      status TEXT NOT NULL,
-      votes TEXT NOT NULL DEFAULT '[]',
-      created_at TEXT NOT NULL,
-      resolved_at TEXT,
-      resolution TEXT
-    );
+        CREATE TABLE IF NOT EXISTS moderation_cases (
+          id TEXT PRIMARY KEY,
+          target_type TEXT NOT NULL,
+          target_id TEXT NOT NULL,
+          accused_hash TEXT NOT NULL,
+          report_ids TEXT NOT NULL DEFAULT '[]',
+          juror_hashes TEXT NOT NULL DEFAULT '[]',
+          status TEXT NOT NULL,
+          votes TEXT NOT NULL DEFAULT '[]',
+          created_at TEXT NOT NULL,
+          resolved_at TEXT,
+          resolution TEXT
+        );
 
-    CREATE TABLE IF NOT EXISTS audit_log (
-      id TEXT PRIMARY KEY,
-      operation TEXT NOT NULL,
-      actor_hash TEXT NOT NULL,
-      target_hash TEXT,
-      target_type TEXT,
-      target_id TEXT,
-      reason TEXT NOT NULL,
-      created_at TEXT NOT NULL
-    );
+        CREATE TABLE IF NOT EXISTS audit_log (
+          id TEXT PRIMARY KEY,
+          operation TEXT NOT NULL,
+          actor_hash TEXT NOT NULL,
+          target_hash TEXT,
+          target_type TEXT,
+          target_id TEXT,
+          reason TEXT NOT NULL,
+          created_at TEXT NOT NULL
+        );
 
-    CREATE TABLE IF NOT EXISTS auth_events (
-      id TEXT PRIMARY KEY,
-      event_type TEXT NOT NULL,
-      email_digest TEXT,
-      domain_group TEXT,
-      success INTEGER NOT NULL DEFAULT 0,
-      reason TEXT NOT NULL,
-      created_at TEXT NOT NULL
-    );
+        CREATE TABLE IF NOT EXISTS auth_events (
+          id TEXT PRIMARY KEY,
+          event_type TEXT NOT NULL,
+          email_digest TEXT,
+          domain_group TEXT,
+          success INTEGER NOT NULL DEFAULT 0,
+          reason TEXT NOT NULL,
+          created_at TEXT NOT NULL
+        );
 
-    CREATE TABLE IF NOT EXISTS appeal_cases (
-      id TEXT PRIMARY KEY,
-      appellant_hash TEXT NOT NULL,
-      target_type TEXT NOT NULL,
-      target_id TEXT NOT NULL,
-      reason TEXT NOT NULL,
-      status TEXT NOT NULL,
-      votes TEXT NOT NULL DEFAULT '[]',
-      created_at TEXT NOT NULL,
-      resolved_at TEXT,
-      resolution TEXT
-    );
+        CREATE TABLE IF NOT EXISTS appeal_cases (
+          id TEXT PRIMARY KEY,
+          appellant_hash TEXT NOT NULL,
+          target_type TEXT NOT NULL,
+          target_id TEXT NOT NULL,
+          reason TEXT NOT NULL,
+          status TEXT NOT NULL,
+          votes TEXT NOT NULL DEFAULT '[]',
+          created_at TEXT NOT NULL,
+          resolved_at TEXT,
+          resolution TEXT
+        );
 
-    CREATE TABLE IF NOT EXISTS approval_requests (
-      id TEXT PRIMARY KEY,
-      operation TEXT NOT NULL,
-      payload TEXT NOT NULL DEFAULT '{}',
-      approvals TEXT NOT NULL DEFAULT '[]',
-      status TEXT NOT NULL,
-      created_by TEXT NOT NULL,
-      created_at TEXT NOT NULL,
-      resolved_at TEXT,
-      result TEXT
-    );
+        CREATE TABLE IF NOT EXISTS approval_requests (
+          id TEXT PRIMARY KEY,
+          operation TEXT NOT NULL,
+          payload TEXT NOT NULL DEFAULT '{}',
+          approvals TEXT NOT NULL DEFAULT '[]',
+          status TEXT NOT NULL,
+          created_by TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          resolved_at TEXT,
+          result TEXT
+        );
 
-    CREATE INDEX IF NOT EXISTS idx_posts_space_id ON posts(space_id);
-    CREATE INDEX IF NOT EXISTS idx_comments_post_id ON comments(post_id);
-    CREATE INDEX IF NOT EXISTS idx_reports_target ON reports(target_type, target_id);
-    CREATE INDEX IF NOT EXISTS idx_cases_target_status ON moderation_cases(target_type, target_id, status);
-    CREATE INDEX IF NOT EXISTS idx_auth_events_email_digest ON auth_events(email_digest);
-    CREATE INDEX IF NOT EXISTS idx_appeal_cases_target_status ON appeal_cases(target_type, target_id, status);
-    CREATE INDEX IF NOT EXISTS idx_approval_requests_operation_status ON approval_requests(operation, status);
-  `);
-
+        CREATE INDEX IF NOT EXISTS idx_posts_space_id ON posts(space_id);
+        CREATE INDEX IF NOT EXISTS idx_comments_post_id ON comments(post_id);
+        CREATE INDEX IF NOT EXISTS idx_reports_target ON reports(target_type, target_id);
+        CREATE INDEX IF NOT EXISTS idx_cases_target_status ON moderation_cases(target_type, target_id, status);
+        CREATE INDEX IF NOT EXISTS idx_auth_events_email_digest ON auth_events(email_digest);
+        CREATE INDEX IF NOT EXISTS idx_appeal_cases_target_status ON appeal_cases(target_type, target_id, status);
+        CREATE INDEX IF NOT EXISTS idx_approval_requests_operation_status ON approval_requests(operation, status);
+      `);
+    }
+  },
+  {
+    version: 2,
+    name: 'hashed_sessions',
+    up(db) {
   const sessionColumns = db.prepare('PRAGMA table_info(sessions)').all().map((column) => column.name);
   if (!sessionColumns.includes('token_hash')) {
     db.exec('ALTER TABLE sessions ADD COLUMN token_hash TEXT');
@@ -316,14 +325,24 @@ function migrate(db) {
 
   db.prepare('DELETE FROM sessions WHERE token_hash IS NULL OR token_hash = ?').run('');
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_sessions_token_hash ON sessions(token_hash)');
-
+    }
+  },
+  {
+    version: 3,
+    name: 'user_nullifiers',
+    up(db) {
   const userColumns = db.prepare('PRAGMA table_info(users)').all().map((column) => column.name);
   if (!userColumns.includes('nullifier')) {
     db.exec('ALTER TABLE users ADD COLUMN nullifier TEXT');
     db.prepare('UPDATE users SET nullifier = user_hash WHERE nullifier IS NULL OR nullifier = ?').run('');
   }
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_nullifier ON users(nullifier)');
-
+    }
+  },
+  {
+    version: 4,
+    name: 'privacy_preserving_magic_tokens',
+    up(db) {
   const magicTokenColumns = db.prepare('PRAGMA table_info(magic_tokens)').all().map((column) => column.name);
   if (!magicTokenColumns.includes('subject_hash') || !magicTokenColumns.includes('nullifier') || magicTokenColumns.includes('email')) {
     db.exec(`
@@ -347,10 +366,54 @@ function migrate(db) {
     db.exec('DROP TABLE magic_tokens');
     db.exec('ALTER TABLE magic_tokens_v2 RENAME TO magic_tokens');
   }
-
+    }
+  },
+  {
+    version: 5,
+    name: 'moderation_jury_assignments',
+    up(db) {
   const moderationCaseColumns = db.prepare('PRAGMA table_info(moderation_cases)').all().map((column) => column.name);
   if (!moderationCaseColumns.includes('juror_hashes')) {
     db.exec("ALTER TABLE moderation_cases ADD COLUMN juror_hashes TEXT NOT NULL DEFAULT '[]'");
+  }
+    }
+  }
+];
+
+function ensureMigrationTable(db) {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS schema_migrations (
+      version INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      applied_at TEXT NOT NULL
+    );
+  `);
+}
+
+function appliedMigrationVersions(db) {
+  ensureMigrationTable(db);
+  return new Set(db.prepare('SELECT version FROM schema_migrations').all().map((row) => row.version));
+}
+
+function migrate(db) {
+  ensureMigrationTable(db);
+  const appliedVersions = appliedMigrationVersions(db);
+
+  db.exec('BEGIN');
+  try {
+    for (const migration of migrations) {
+      if (appliedVersions.has(migration.version)) {
+        continue;
+      }
+
+      migration.up(db);
+      db.prepare('INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)')
+        .run(migration.version, migration.name, new Date().toISOString());
+    }
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
   }
 }
 

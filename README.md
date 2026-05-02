@@ -97,7 +97,7 @@ HIGH_IMPACT_APPROVAL_COUNT=2
 
 For local development, `/auth/request-link` returns the verification token in the response. Set `EMAIL_DELIVERY=smtp` to send magic links through SMTP instead.
 
-By default, local data is stored in `data/unianon.sqlite`. Tests use an in-memory SQLite database.
+By default, local data is stored in `data/unianon.sqlite`. Tests use an in-memory SQLite database. SQLite schema changes are tracked in the `schema_migrations` table and applied automatically at startup.
 
 Production startup validates configuration and rejects unsafe defaults such as `dev-only-change-me`, duplicate secrets, `EMAIL_DELIVERY=dev`, and localhost `APP_BASE_URL`.
 

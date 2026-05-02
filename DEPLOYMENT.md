@@ -177,7 +177,7 @@ Rate-limit storage:
 - Npm local run without `REDIS_URL`: in-memory counters.
 - Docker Compose: Redis counters.
 
-The app loads SQLite records into memory at startup and writes changes back to SQLite during API operations. If an external script changes the database while the app is running, restart the app.
+The app loads SQLite records into memory at startup and writes changes back to SQLite during API operations. Schema migrations are versioned in the `schema_migrations` table and run automatically before records are loaded. If an external script changes the database while the app is running, restart the app.
 
 ## Demo Accounts
 
