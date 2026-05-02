@@ -167,3 +167,14 @@ The next privacy-focused implementation steps should be:
 3. Draft the Auth Service / Community Service split.
 4. Define the nullifier and duplicate-prevention model.
 5. Research anonymous credentials as the target privacy architecture.
+
+## Revocation Model
+
+MVP revocation is enforced through the community-scoped nullifier:
+
+- Community stores `nullifier`, `banned`, and governance records.
+- A banned nullifier cannot receive a normal community session.
+- The same member verifying again for the same `community_id` maps back to the same nullifier.
+- Appeals can be opened with a signed membership assertion without storing plaintext email.
+
+Target anonymous-credential revocation should keep this property while making the issuer unable to link credential issuance to community use.

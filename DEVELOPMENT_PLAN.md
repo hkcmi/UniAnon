@@ -115,7 +115,7 @@ Goal: move beyond email-visible login toward stronger privacy-preserving members
 - [ ] Research anonymous credentials / blind signatures.
 - [x] Define duplicate-prevention model for anonymous credentials.
 - [x] Add community-scoped nullifier for duplicate prevention and ban persistence.
-- [ ] Define revocation model for anonymous credentials.
+- [x] Define revocation model for anonymous credentials.
 - [x] Define speech-protection threat model.
 
 ## Phase 5: Deployment

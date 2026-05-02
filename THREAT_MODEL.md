@@ -218,6 +218,17 @@ But:
 nullifier must not reveal email
 ```
 
+### Revocation Without Email Storage
+
+The MVP revocation model is nullifier-based:
+
+```text
+ban -> user.banned = true for the account bound to the nullifier
+same member + same community_id -> same nullifier -> same banned account
+```
+
+The Community Service does not need email to enforce revocation. It only needs the community-scoped nullifier from a signed assertion. Future anonymous-credential modes should preserve the same property with a cryptographic nullifier, while avoiding issuer visibility into which community account used the credential.
+
 ### Appeal Without Email Exposure
 
 Banned users cannot receive a normal community session, but they can still prove membership and open an appeal. When `/auth/verify` detects a banned user, it returns a signed membership assertion instead of a session. The appeal endpoint accepts that assertion and opens an `appeal_case` without storing plaintext email.
