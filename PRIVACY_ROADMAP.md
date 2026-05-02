@@ -84,8 +84,8 @@ Tasks:
 
 - [x] Add OIDC login provider support.
 - [ ] Add SAML login provider support.
-- [ ] Support opaque subject mapping.
-- [ ] Document privacy-preserving IdP configuration.
+- [x] Support opaque subject mapping.
+- [x] Document privacy-preserving IdP configuration.
 - [ ] Add tests that community user creation does not require plaintext email.
 
 ### Level 4: Email Alias / Relay Mode

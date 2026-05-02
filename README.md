@@ -322,6 +322,8 @@ See [PRIVACY_ROADMAP.md](PRIVACY_ROADMAP.md) for the long-term privacy-first arc
 
 See [THREAT_MODEL.md](THREAT_MODEL.md) for the speech-protection threat model.
 
+See [IDENTITY_RESEARCH.md](IDENTITY_RESEARCH.md) for OIDC, SAML, and anonymous-credential identity notes.
+
 ## Trust Levels
 
 Trust levels are calculated from privacy-preserving community activity:
