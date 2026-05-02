@@ -82,7 +82,7 @@ Avoid requesting:
 
 Tasks:
 
-- [ ] Add OIDC login provider support.
+- [x] Add OIDC login provider support.
 - [ ] Add SAML login provider support.
 - [ ] Support opaque subject mapping.
 - [ ] Document privacy-preserving IdP configuration.
@@ -167,6 +167,18 @@ The next privacy-focused implementation steps should be:
 3. Draft the Auth Service / Community Service split.
 4. Define the nullifier and duplicate-prevention model.
 5. Research anonymous credentials as the target privacy architecture.
+
+## Minimal-Claims OIDC Prototype
+
+The MVP includes an OIDC authorization-start prototype:
+
+- Uses provider discovery.
+- Requires authorization code flow support.
+- Requests `openid` by default.
+- Does not request `email` or `profile` by default.
+- Does not yet complete token exchange or ID token verification.
+
+This is a stepping stone toward organization IdPs that can issue opaque subjects without exposing mailbox addresses to the Community Service.
 
 ## Revocation Model
 

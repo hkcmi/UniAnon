@@ -13,6 +13,7 @@ import {
 } from './identity.js';
 import { createMailer } from './mailer.js';
 import { createMembershipAssertion, verifyMembershipAssertion } from './membership-assertion.js';
+import { createAuthorizationRequest, fetchDiscovery } from './oidc.js';
 import { createRateLimiter } from './rate-limit.js';
 import { createStore } from './store.js';
 
@@ -53,10 +54,12 @@ const errorMessages = {
   invalid_target_type: 'Choose a supported target type.',
   juror_not_assigned: 'This case is assigned to a different jury.',
   moderator_required: 'Moderator access is required.',
-  own_approval_not_sufficient: 'A second moderator or administrator must approve this action.',
   nickname_required: 'Set a nickname before continuing.',
   nickname_unavailable_or_already_set: 'That nickname is unavailable or has already been set.',
   not_found: 'Not found.',
+  oidc_not_configured: 'OIDC is not configured for this UniAnon instance.',
+  oidc_provider_unavailable: 'OIDC provider metadata could not be loaded.',
+  own_approval_not_sufficient: 'A second moderator or administrator must approve this action.',
   post_not_found: 'Post not found.',
   protected_user_requires_governance: 'Protected users can only be sanctioned through governance.',
   rate_limited: 'Too many requests. Please wait and try again.',
@@ -624,6 +627,29 @@ app.post('/auth/exchange', (req, res) => {
     expires_in: Math.floor(config.sessionTtlMs / 1000),
     user: publicUser(user),
     nickname_required: !user.nickname
+  });
+});
+
+app.get('/auth/oidc/start', async (req, res) => {
+  if (!config.oidc.issuer || !config.oidc.clientId || !config.oidc.redirectUri) {
+    return res.status(501).json({ error: 'oidc_not_configured' });
+  }
+
+  const discovery = await fetchDiscovery(config.oidc.issuer);
+  if (!discovery) {
+    return res.status(502).json({ error: 'oidc_provider_unavailable' });
+  }
+
+  const authorizationRequest = createAuthorizationRequest({
+    discovery,
+    clientId: config.oidc.clientId,
+    redirectUri: config.oidc.redirectUri,
+    scopes: config.oidc.scopes
+  });
+
+  return res.json({
+    ...authorizationRequest,
+    issuer: discovery.issuer
   });
 });
 

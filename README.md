@@ -81,6 +81,10 @@ SESSION_TTL_MS=604800000
 ALLOWED_DOMAINS=example.edu,example.org,company.com
 EMAIL_DELIVERY=dev
 APP_BASE_URL=http://localhost:3000
+OIDC_ISSUER=
+OIDC_CLIENT_ID=
+OIDC_REDIRECT_URI=
+OIDC_SCOPES=openid
 REPORT_WEIGHT_THRESHOLD=3
 JURY_APPROVAL_WEIGHT=3
 JURY_SIZE=5
@@ -150,6 +154,10 @@ Exchange a signed membership assertion for a community session. The assertion co
 ```json
 { "membership_assertion": "signed-assertion" }
 ```
+
+### `GET /auth/oidc/start`
+
+Start the minimal-claims OIDC prototype. It is disabled unless `OIDC_ISSUER`, `OIDC_CLIENT_ID`, and `OIDC_REDIRECT_URI` are configured. The default scope is only `openid`; do not request `email` or `profile` unless the deployment accepts that privacy tradeoff.
 
 ### `POST /users/nickname`
 

@@ -29,6 +29,15 @@ export const config = {
     user: process.env.SMTP_USER || '',
     pass: process.env.SMTP_PASS || ''
   },
+  oidc: {
+    issuer: process.env.OIDC_ISSUER || '',
+    clientId: process.env.OIDC_CLIENT_ID || '',
+    redirectUri: process.env.OIDC_REDIRECT_URI || '',
+    scopes: (process.env.OIDC_SCOPES || 'openid')
+      .split(',')
+      .map((scope) => scope.trim())
+      .filter(Boolean)
+  },
   reportWeightThreshold: Number(process.env.REPORT_WEIGHT_THRESHOLD || 3),
   juryApprovalWeight: Number(process.env.JURY_APPROVAL_WEIGHT || 3),
   jurySize: Number(process.env.JURY_SIZE || 5),

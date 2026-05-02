@@ -110,7 +110,7 @@ Goal: move beyond email-visible login toward stronger privacy-preserving members
 - [x] Add auth event logging with email redaction.
 - [x] Split Auth Service and Community Service design.
 - [x] Define signed membership assertion format.
-- [ ] Add OIDC minimal-claims prototype.
+- [x] Add OIDC minimal-claims prototype.
 - [ ] Research SAML support.
 - [ ] Research anonymous credentials / blind signatures.
 - [x] Define duplicate-prevention model for anonymous credentials.
