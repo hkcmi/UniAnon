@@ -243,7 +243,7 @@ docker compose up --build
 - SQLite stores session token hashes, not plaintext session tokens.
 - Magic-token records store anonymous subject hashes, not plaintext email.
 - SQLite is intended for local MVP use.
-- The current app is a standalone MVP, not a NodeBB plugin yet.
+- The current app is a standalone MVP. NodeBB is only an optional future bridge target; see [OPTIONAL_INTEGRATIONS.md](OPTIONAL_INTEGRATIONS.md).
 
 ## Troubleshooting
 
