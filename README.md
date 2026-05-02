@@ -335,6 +335,8 @@ See [THREAT_MODEL.md](THREAT_MODEL.md) for the speech-protection threat model.
 
 See [IDENTITY_RESEARCH.md](IDENTITY_RESEARCH.md) for OIDC, SAML, and anonymous-credential identity notes.
 
+See [PRODUCTION_PRIVACY_CHECKLIST.md](PRODUCTION_PRIVACY_CHECKLIST.md) before running a real community or privacy-sensitive pilot.
+
 ## Trust Levels
 
 Trust levels are calculated from privacy-preserving community activity:

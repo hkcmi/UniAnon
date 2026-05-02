@@ -79,6 +79,8 @@ Use `SMTP_SECURE=true` for providers that require implicit TLS, usually on port 
 
 SMTP providers necessarily see recipient email addresses. See [PRIVACY.md](PRIVACY.md) before choosing a delivery provider.
 
+Before running a real community or privacy-sensitive pilot, complete [PRODUCTION_PRIVACY_CHECKLIST.md](PRODUCTION_PRIVACY_CHECKLIST.md).
+
 ## Local Npm Run
 
 Install dependencies:
