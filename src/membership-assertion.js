@@ -7,7 +7,11 @@ function encode(value) {
 }
 
 function decode(value) {
-  return JSON.parse(Buffer.from(value, 'base64url').toString('utf8'));
+  try {
+    return JSON.parse(Buffer.from(value, 'base64url').toString('utf8'));
+  } catch {
+    return null;
+  }
 }
 
 function sign(unsigned, secret) {
@@ -18,6 +22,8 @@ export function createMembershipAssertion({ subjectHash, domainGroup, nullifier 
   const now = Date.now();
   const payload = {
     typ: 'unianon.membership',
+    iss: options.issuer || 'unianon.auth',
+    aud: options.communityId || config.communityId,
     sub: subjectHash,
     nullifier,
     domain_group: domainGroup,
@@ -50,11 +56,27 @@ export function verifyMembershipAssertion(assertion, options = {}) {
   }
 
   const payload = decode(encodedPayload);
+  if (!payload) {
+    return null;
+  }
+
   if (payload.typ !== 'unianon.membership') {
     return null;
   }
 
+  if (payload.iss !== (options.issuer || 'unianon.auth')) {
+    return null;
+  }
+
+  if (payload.aud !== (options.communityId || config.communityId)) {
+    return null;
+  }
+
   if (!payload.sub || !payload.nullifier || !payload.domain_group || payload.exp <= Date.now()) {
+    return null;
+  }
+
+  if (typeof payload.iat !== 'number' || payload.iat > Date.now() + 60_000) {
     return null;
   }
 

@@ -126,7 +126,7 @@ Implemented MVP step:
 magic token -> signed membership assertion -> community session
 ```
 
-The magic-token store keeps `subject_hash`, `nullifier`, and `domain_group`, not plaintext email.
+The magic-token store keeps `subject_hash`, `nullifier`, and `domain_group`, not plaintext email. Membership assertions include issuer and audience fields so a proof minted for one community cannot be used against another community.
 
 Disallowed Community inputs:
 

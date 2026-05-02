@@ -17,10 +17,10 @@ Inside the community app:
 ```text
 subject_hash = HMAC_SHA256(email, auth_subject_secret)
 nullifier = HMAC_SHA256(community_id + subject_hash, nullifier_secret)
-membership_assertion = sign({ subject_hash, nullifier, domain_group, exp })
+membership_assertion = sign({ iss, aud, subject_hash, nullifier, domain_group, exp })
 ```
 
-The Community Service uses the assertion subject as `user_hash` and stores `nullifier` as a private enforcement key. This means admins and moderators can govern stable anonymous accounts, prevent easy duplicate accounts, and preserve bans without directly seeing the user's email address in normal community workflows.
+The Community Service verifies the assertion issuer and audience, uses the assertion subject as `user_hash`, and stores `nullifier` as a private enforcement key. This means admins and moderators can govern stable anonymous accounts, prevent easy duplicate accounts, and preserve bans without directly seeing the user's email address in normal community workflows.
 
 Banned users do not receive a normal session. They may receive a signed membership assertion so they can open an appeal without revealing or storing plaintext email in the Community Service.
 
@@ -87,7 +87,7 @@ Minimum safeguards:
 For stronger separation, deploy Auth Service separately from the community app:
 
 - Auth Service handles email and magic links.
-- Community Service receives only signed membership assertions, `user_hash`, nickname, domain group, roles, and session state.
+- Community Service receives only signed membership assertions scoped to its `community_id`, `user_hash`, nickname, domain group, roles, and session state.
 - Community moderators do not get access to Auth Service logs.
 
 This does not hide email from the Auth Service or SMTP provider, but it reduces who can correlate email with community activity.

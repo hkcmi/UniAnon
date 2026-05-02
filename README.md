@@ -145,7 +145,7 @@ Verify a magic token and receive a signed membership assertion plus a session to
 
 ### `POST /auth/exchange`
 
-Exchange a signed membership assertion for a community session. The assertion contains an anonymous subject and domain group, not an email address.
+Exchange a signed membership assertion for a community session. The assertion contains an issuer, target community audience, anonymous subject, nullifier, and domain group, not an email address.
 
 ```json
 { "membership_assertion": "signed-assertion" }
