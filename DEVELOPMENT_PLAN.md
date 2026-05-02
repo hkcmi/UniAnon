@@ -136,7 +136,7 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 
 - [x] Decide standalone product direction over NodeBB-first integration.
 - [x] Add production configuration safety checks.
-- [ ] Complete OIDC callback and ID token verification.
+- [x] Complete OIDC callback and ID token verification.
 - [ ] Improve standalone governance/admin UI.
 - [ ] Add structured database migration versioning.
 - [ ] Add backup and restore documentation.
@@ -147,10 +147,10 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 
 Recommended next tasks:
 
-1. Complete OIDC callback and ID token verification.
-2. Improve standalone governance/admin UI.
-3. Add structured database migration versioning.
-4. Add production privacy checklist.
+1. Improve standalone governance/admin UI.
+2. Add structured database migration versioning.
+3. Add production privacy checklist.
+4. Add backup and restore documentation.
 
 Suggested implementation order:
 

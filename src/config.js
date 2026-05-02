@@ -33,11 +33,17 @@ export const config = {
   oidc: {
     issuer: process.env.OIDC_ISSUER || '',
     clientId: process.env.OIDC_CLIENT_ID || '',
+    clientSecret: process.env.OIDC_CLIENT_SECRET || '',
     redirectUri: process.env.OIDC_REDIRECT_URI || '',
     scopes: (process.env.OIDC_SCOPES || 'openid')
       .split(',')
       .map((scope) => scope.trim())
-      .filter(Boolean)
+      .filter(Boolean),
+    domainClaimNames: (process.env.OIDC_DOMAIN_CLAIMS || 'hd,domain,domain_group')
+      .split(',')
+      .map((claim) => claim.trim())
+      .filter(Boolean),
+    stateTtlMs: Number(process.env.OIDC_STATE_TTL_MS || 10 * 60 * 1000)
   },
   reportWeightThreshold: Number(process.env.REPORT_WEIGHT_THRESHOLD || 3),
   juryApprovalWeight: Number(process.env.JURY_APPROVAL_WEIGHT || 3),

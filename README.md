@@ -83,8 +83,11 @@ EMAIL_DELIVERY=dev
 APP_BASE_URL=http://localhost:3000
 OIDC_ISSUER=
 OIDC_CLIENT_ID=
+OIDC_CLIENT_SECRET=
 OIDC_REDIRECT_URI=
 OIDC_SCOPES=openid
+OIDC_DOMAIN_CLAIMS=hd,domain,domain_group
+OIDC_STATE_TTL_MS=600000
 REPORT_WEIGHT_THRESHOLD=3
 JURY_APPROVAL_WEIGHT=3
 JURY_SIZE=5
@@ -159,7 +162,13 @@ Exchange a signed membership assertion for a community session. The assertion co
 
 ### `GET /auth/oidc/start`
 
-Start the minimal-claims OIDC prototype. It is disabled unless `OIDC_ISSUER`, `OIDC_CLIENT_ID`, and `OIDC_REDIRECT_URI` are configured. The default scope is only `openid`; do not request `email` or `profile` unless the deployment accepts that privacy tradeoff.
+Start a minimal-claims OIDC sign-in. It is disabled unless `OIDC_ISSUER`, `OIDC_CLIENT_ID`, and `OIDC_REDIRECT_URI` are configured. The default scope is only `openid`; do not request `email` or `profile` unless the deployment accepts that privacy tradeoff.
+
+### `GET /auth/oidc/callback`
+
+Complete OIDC sign-in after the identity provider redirects back with `code` and `state`. UniAnon verifies the provider metadata, exchanges the code, validates the RS256 `id_token` signature, issuer, audience, expiry, and nonce, then creates a session from `iss + sub`.
+
+OIDC identity does not use email to derive the UniAnon user hash. Domain membership should come from a configured verified domain claim such as `hd`, `domain`, or `domain_group`; verified email fallback is supported only for providers that cannot issue a domain-only claim.
 
 ### `POST /users/nickname`
 

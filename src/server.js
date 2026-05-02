@@ -13,7 +13,14 @@ import {
 } from './identity.js';
 import { createMailer } from './mailer.js';
 import { createMembershipAssertion, verifyMembershipAssertion } from './membership-assertion.js';
-import { createAuthorizationRequest, fetchDiscovery } from './oidc.js';
+import {
+  createAuthorizationRequest,
+  exchangeAuthorizationCode,
+  extractVerifiedDomainFromClaims,
+  fetchDiscovery,
+  fetchJwks,
+  verifyIdToken
+} from './oidc.js';
 import { createRateLimiter } from './rate-limit.js';
 import { createStore } from './store.js';
 
@@ -58,6 +65,7 @@ const errorMessages = {
   nickname_unavailable_or_already_set: 'That nickname is unavailable or has already been set.',
   not_found: 'Not found.',
   oidc_not_configured: 'OIDC is not configured for this UniAnon instance.',
+  oidc_invalid_callback: 'OIDC sign-in could not be verified.',
   oidc_provider_unavailable: 'OIDC provider metadata could not be loaded.',
   own_approval_not_sufficient: 'A second moderator or administrator must approve this action.',
   post_not_found: 'Post not found.',
@@ -69,6 +77,29 @@ const errorMessages = {
   trusted_juror_required: 'Trusted-user access is required.',
   user_banned: 'This account is banned. You may open an appeal if eligible.'
 };
+
+const oidcStates = new Map();
+
+function storeOidcState(state, nonce) {
+  for (const [storedState, record] of oidcStates.entries()) {
+    if (record.expires_at < Date.now()) {
+      oidcStates.delete(storedState);
+    }
+  }
+  oidcStates.set(state, {
+    nonce,
+    expires_at: Date.now() + config.oidc.stateTtlMs
+  });
+}
+
+function consumeOidcState(state) {
+  const record = oidcStates.get(state);
+  oidcStates.delete(state);
+  if (!record || record.expires_at < Date.now()) {
+    return null;
+  }
+  return record;
+}
 
 app.use((req, res, next) => {
   const originalJson = res.json.bind(res);
@@ -646,10 +677,78 @@ app.get('/auth/oidc/start', async (req, res) => {
     redirectUri: config.oidc.redirectUri,
     scopes: config.oidc.scopes
   });
+  if (!authorizationRequest) {
+    return res.status(502).json({ error: 'oidc_provider_unavailable' });
+  }
+  storeOidcState(authorizationRequest.state, authorizationRequest.nonce);
 
   return res.json({
     ...authorizationRequest,
     issuer: discovery.issuer
+  });
+});
+
+app.get('/auth/oidc/callback', async (req, res) => {
+  if (!config.oidc.issuer || !config.oidc.clientId || !config.oidc.redirectUri) {
+    return res.status(501).json({ error: 'oidc_not_configured' });
+  }
+
+  const stateRecord = consumeOidcState(req.query.state);
+  if (!stateRecord || typeof req.query.code !== 'string') {
+    return res.status(400).json({ error: 'oidc_invalid_callback' });
+  }
+
+  const discovery = await fetchDiscovery(config.oidc.issuer);
+  if (!discovery?.token_endpoint || !discovery?.jwks_uri) {
+    return res.status(502).json({ error: 'oidc_provider_unavailable' });
+  }
+
+  const tokens = await exchangeAuthorizationCode({
+    discovery,
+    code: req.query.code,
+    clientId: config.oidc.clientId,
+    clientSecret: config.oidc.clientSecret,
+    redirectUri: config.oidc.redirectUri
+  });
+  if (!tokens) {
+    return res.status(400).json({ error: 'oidc_invalid_callback' });
+  }
+
+  const jwks = await fetchJwks(discovery.jwks_uri);
+  const claims = verifyIdToken(tokens.id_token, {
+    issuer: discovery.issuer,
+    clientId: config.oidc.clientId,
+    nonce: stateRecord.nonce,
+    jwks
+  });
+  const domainGroup = extractVerifiedDomainFromClaims(claims, config.allowedDomains, config.oidc.domainClaimNames);
+  if (!claims || !domainGroup) {
+    return res.status(403).json({ error: domainGroup ? 'oidc_invalid_callback' : 'domain_not_allowed' });
+  }
+
+  const subjectHash = createUserHash(`${claims.iss}:${claims.sub}`, config.authSubjectSecret);
+  const nullifier = createScopedNullifier(subjectHash, config.communityId, config.nullifierSecret);
+  const membershipAssertion = createMembershipAssertion({
+    subjectHash,
+    domainGroup,
+    nullifier
+  });
+  const user = store.upsertUser(subjectHash, domainGroup, nullifier);
+  if (user.banned) {
+    return res.status(403).json({
+      error: 'user_banned',
+      membership_assertion: membershipAssertion,
+      user: publicUser(user)
+    });
+  }
+  const sessionToken = store.createSession(user.user_hash);
+
+  return res.json({
+    session_token: sessionToken,
+    membership_assertion: membershipAssertion,
+    expires_in: Math.floor(config.sessionTtlMs / 1000),
+    user: publicUser(user),
+    nickname_required: !user.nickname
   });
 });
 

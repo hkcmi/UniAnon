@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import { after, before, test } from 'node:test';
+import { config } from '../src/config.js';
 import { createMembershipAssertion } from '../src/membership-assertion.js';
 import { app, store } from '../src/server.js';
 
@@ -34,6 +36,19 @@ async function signup(email, nickname) {
   assert.equal(nicknameResponse.status, 201);
 
   return { sessionToken, user };
+}
+
+function encodeJwtPart(value) {
+  return Buffer.from(JSON.stringify(value)).toString('base64url');
+}
+
+function signIdToken({ privateKey, claims, kid = 'api-test-key' }) {
+  const header = encodeJwtPart({ alg: 'RS256', typ: 'JWT', kid });
+  const payload = encodeJwtPart(claims);
+  const signer = crypto.createSign('RSA-SHA256');
+  signer.update(`${header}.${payload}`);
+  signer.end();
+  return `${header}.${payload}.${signer.sign(privateKey, 'base64url')}`;
 }
 
 before(async () => {
@@ -212,6 +227,94 @@ test('exchanges membership assertion without email', async () => {
   assert.equal(exchanged.user.domain_group, 'example.edu');
   assert.equal(Object.hasOwn(exchanged.user, 'email'), false);
   assert.equal(Object.hasOwn(exchanged.user, 'nullifier'), false);
+});
+
+test('completes OIDC callback with domain claim and no stored email', async () => {
+  const originalOidc = { ...config.oidc };
+  const originalFetch = globalThis.fetch;
+  const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
+  const jwk = publicKey.export({ format: 'jwk' });
+  jwk.kid = 'api-test-key';
+  let nonce;
+
+  config.oidc.issuer = 'https://idp.example.edu';
+  config.oidc.clientId = 'client-123';
+  config.oidc.clientSecret = 'client-secret';
+  config.oidc.redirectUri = `${baseUrl}/auth/oidc/callback`;
+  config.oidc.scopes = ['openid'];
+  config.oidc.domainClaimNames = ['hd'];
+
+  globalThis.fetch = async (url, options) => {
+    if (String(url) === 'https://idp.example.edu/.well-known/openid-configuration') {
+      return {
+        ok: true,
+        async json() {
+          return {
+            issuer: 'https://idp.example.edu',
+            authorization_endpoint: 'https://idp.example.edu/authorize',
+            token_endpoint: 'https://idp.example.edu/token',
+            jwks_uri: 'https://idp.example.edu/jwks',
+            response_types_supported: ['code']
+          };
+        }
+      };
+    }
+
+    if (String(url) === 'https://idp.example.edu/token') {
+      assert.equal(options.body.get('code'), 'oidc-code');
+      const nowSeconds = Math.floor(Date.now() / 1000);
+      return {
+        ok: true,
+        async json() {
+          return {
+            id_token: signIdToken({
+              privateKey,
+              claims: {
+                iss: 'https://idp.example.edu',
+                aud: 'client-123',
+                sub: 'opaque-idp-subject',
+                nonce,
+                hd: 'example.edu',
+                iat: nowSeconds,
+                exp: nowSeconds + 300
+              }
+            })
+          };
+        }
+      };
+    }
+
+    if (String(url) === 'https://idp.example.edu/jwks') {
+      return {
+        ok: true,
+        async json() {
+          return { keys: [jwk] };
+        }
+      };
+    }
+
+    return originalFetch(url, options);
+  };
+
+  try {
+    const start = await originalFetch(`${baseUrl}/auth/oidc/start`);
+    assert.equal(start.status, 200);
+    const startBody = await start.json();
+    nonce = startBody.nonce;
+    assert.equal(new URL(startBody.authorization_url).searchParams.get('scope'), 'openid');
+
+    const callback = await originalFetch(`${baseUrl}/auth/oidc/callback?state=${startBody.state}&code=oidc-code`);
+    assert.equal(callback.status, 200);
+    const body = await callback.json();
+
+    assert.equal(typeof body.session_token, 'string');
+    assert.equal(body.user.domain_group, 'example.edu');
+    assert.equal(body.user.user_hash.includes('opaque-idp-subject'), false);
+    assert.equal(store.users.get(body.user.user_hash).email, undefined);
+  } finally {
+    Object.assign(config.oidc, originalOidc);
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test('prevents duplicate community accounts with the same nullifier', async () => {
