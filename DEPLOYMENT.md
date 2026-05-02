@@ -2,7 +2,7 @@
 
 This guide covers the current local MVP deployment paths for UniAnon.
 
-UniAnon is not production-hardened yet. The current deployment target is a local or internal demo environment with SQLite persistence, dev magic-link tokens, and a single app process.
+UniAnon is still early, but production startup now rejects unsafe defaults such as development secrets, duplicate secrets, dev email delivery, and localhost base URLs. The current deployment target is a local or internal pilot with SQLite persistence and a single app process.
 
 ## Requirements
 

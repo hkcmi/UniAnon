@@ -96,6 +96,8 @@ For local development, `/auth/request-link` returns the verification token in th
 
 By default, local data is stored in `data/unianon.sqlite`. Tests use an in-memory SQLite database.
 
+Production startup validates configuration and rejects unsafe defaults such as `dev-only-change-me`, duplicate secrets, `EMAIL_DELIVERY=dev`, and localhost `APP_BASE_URL`.
+
 Rate limits use an in-memory store by default. Set `REDIS_URL` to use Redis-backed counters.
 
 ## Docker

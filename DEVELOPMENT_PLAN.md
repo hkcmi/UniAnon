@@ -130,25 +130,27 @@ Goal: make the project easy to run outside the developer machine.
 - [x] Add CI test workflow.
 - [x] Add deployment guide.
 
-## Phase 6: NodeBB Integration
+## Phase 6: Standalone Product Hardening
 
-Goal: decide whether UniAnon remains standalone or becomes a NodeBB auth/governance plugin.
+Goal: keep UniAnon as an independent privacy-first community product and harden it for real deployments.
 
-- [ ] Research NodeBB plugin auth hooks.
-- [ ] Define user mapping between UniAnon `user_hash` and NodeBB user IDs.
-- [ ] Prototype NodeBB SSO or plugin login.
-- [ ] Decide which service owns posts/comments.
-- [ ] Decide which service owns moderation/governance.
-- [ ] Document standalone vs NodeBB architecture tradeoffs.
+- [x] Decide standalone product direction over NodeBB-first integration.
+- [x] Add production configuration safety checks.
+- [ ] Complete OIDC callback and ID token verification.
+- [ ] Improve standalone governance/admin UI.
+- [ ] Add structured database migration versioning.
+- [ ] Add backup and restore documentation.
+- [ ] Add production privacy checklist.
+- [ ] Keep NodeBB bridge as an optional future integration, not a core dependency.
 
 ## Suggested Next Sprint
 
 Recommended next tasks:
 
-1. Define nullifier and duplicate-prevention model.
-2. Draft Auth Service / Community Service split.
-3. Add auth event logging with email redaction.
-4. Continue separating store logic into clearer repository/service modules.
+1. Complete OIDC callback and ID token verification.
+2. Improve standalone governance/admin UI.
+3. Add structured database migration versioning.
+4. Add production privacy checklist.
 
 Suggested implementation order:
 

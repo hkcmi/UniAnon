@@ -2,16 +2,17 @@ import 'dotenv/config';
 
 const defaultDomains = ['example.edu', 'example.org', 'company.com'];
 const isTest = process.env.NODE_ENV === 'test';
+const defaultSecret = 'dev-only-change-me';
 
 export const config = {
   port: Number(process.env.PORT || 3000),
   databasePath: process.env.DATABASE_PATH || (process.env.NODE_ENV === 'test' ? ':memory:' : 'data/unianon.sqlite'),
-  serverSecret: process.env.SERVER_SECRET || 'dev-only-change-me',
-  authSubjectSecret: process.env.AUTH_SUBJECT_SECRET || process.env.SERVER_SECRET || 'dev-only-change-me',
-  authLogSecret: process.env.AUTH_LOG_SECRET || process.env.SERVER_SECRET || 'dev-only-change-me',
-  nullifierSecret: process.env.NULLIFIER_SECRET || process.env.SERVER_SECRET || 'dev-only-change-me',
+  serverSecret: process.env.SERVER_SECRET || defaultSecret,
+  authSubjectSecret: process.env.AUTH_SUBJECT_SECRET || process.env.SERVER_SECRET || defaultSecret,
+  authLogSecret: process.env.AUTH_LOG_SECRET || process.env.SERVER_SECRET || defaultSecret,
+  nullifierSecret: process.env.NULLIFIER_SECRET || process.env.SERVER_SECRET || defaultSecret,
   communityId: process.env.COMMUNITY_ID || 'unianon-local',
-  membershipAssertionSecret: process.env.MEMBERSHIP_ASSERTION_SECRET || process.env.SERVER_SECRET || 'dev-only-change-me',
+  membershipAssertionSecret: process.env.MEMBERSHIP_ASSERTION_SECRET || process.env.SERVER_SECRET || defaultSecret,
   membershipAssertionTtlMs: Number(process.env.MEMBERSHIP_ASSERTION_TTL_MS || 5 * 60 * 1000),
   sessionTtlMs: Number(process.env.SESSION_TTL_MS || 7 * 24 * 60 * 60 * 1000),
   allowedDomains: (process.env.ALLOWED_DOMAINS || defaultDomains.join(','))
@@ -71,3 +72,49 @@ export const config = {
     }
   }
 };
+
+export function validateProductionConfig(currentConfig = config, env = process.env.NODE_ENV) {
+  if (env !== 'production') {
+    return [];
+  }
+
+  const issues = [];
+  const secretEntries = [
+    ['SERVER_SECRET', currentConfig.serverSecret],
+    ['AUTH_SUBJECT_SECRET', currentConfig.authSubjectSecret],
+    ['AUTH_LOG_SECRET', currentConfig.authLogSecret],
+    ['NULLIFIER_SECRET', currentConfig.nullifierSecret],
+    ['MEMBERSHIP_ASSERTION_SECRET', currentConfig.membershipAssertionSecret]
+  ];
+
+  for (const [name, value] of secretEntries) {
+    if (!value || value === defaultSecret || value.length < 32) {
+      issues.push(`${name} must be set to a unique secret with at least 32 characters.`);
+    }
+  }
+
+  if (new Set(secretEntries.map(([, value]) => value)).size !== secretEntries.length) {
+    issues.push('Production secrets must be distinct from each other.');
+  }
+
+  if (!currentConfig.allowedDomains.length) {
+    issues.push('ALLOWED_DOMAINS must contain at least one domain.');
+  }
+
+  if (currentConfig.emailDelivery === 'dev') {
+    issues.push('EMAIL_DELIVERY=dev is not allowed in production.');
+  }
+
+  if (currentConfig.appBaseUrl.includes('localhost')) {
+    issues.push('APP_BASE_URL must not use localhost in production.');
+  }
+
+  return issues;
+}
+
+export function assertProductionConfig(currentConfig = config, env = process.env.NODE_ENV) {
+  const issues = validateProductionConfig(currentConfig, env);
+  if (issues.length > 0) {
+    throw new Error(`Invalid production configuration:\n- ${issues.join('\n- ')}`);
+  }
+}

@@ -1,7 +1,7 @@
 import express from 'express';
 import helmet from 'helmet';
 import crypto from 'node:crypto';
-import { config } from './config.js';
+import { assertProductionConfig, config } from './config.js';
 import {
   createEmailDigest,
   createScopedNullifier,
@@ -1043,6 +1043,7 @@ app.use((req, res) => {
 });
 
 if (process.argv[1] === new URL(import.meta.url).pathname) {
+  assertProductionConfig();
   app.listen(config.port, () => {
     console.log(`UniAnon API listening on http://localhost:${config.port}`);
   });
