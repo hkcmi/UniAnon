@@ -616,7 +616,9 @@ test('allows banned users to appeal with a membership assertion', async () => {
   });
   assert.equal(listAppeals.status, 200);
   const { appeals } = await listAppeals.json();
-  assert.equal(appeals.some((appeal) => appeal.id === appealResult.appeal.id), true);
+  const listedAppeal = appeals.find((appeal) => appeal.id === appealResult.appeal.id);
+  assert.equal(Boolean(listedAppeal), true);
+  assert.equal(listedAppeal.reason, 'The ban should be reviewed.');
 
   const voteResponse = await fetch(`${baseUrl}/appeals/${appealResult.appeal.id}/votes`, {
     method: 'POST',
@@ -662,6 +664,17 @@ test('restricts spaces by allowed email domain', async () => {
   assert.equal(createSpace.status, 202);
   const pending = await createSpace.json();
   assert.equal(pending.approval_request.approvals_count, 1);
+
+  const approvalList = await fetch(`${baseUrl}/approvals`, {
+    headers: { authorization: `Bearer ${moderator.sessionToken}` }
+  });
+  assert.equal(approvalList.status, 200);
+  const { approvals } = await approvalList.json();
+  const listedApproval = approvals.find((approval) => approval.id === pending.approval_request.id);
+  assert.deepEqual(listedApproval.payload, {
+    name: 'Example Org',
+    allowed_domains: ['example.org']
+  });
 
   const approveSpace = await fetch(`${baseUrl}/spaces`, {
     method: 'POST',

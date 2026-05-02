@@ -80,12 +80,21 @@
             <h2>Governance</h2>
           </div>
           <div id="caseList" class="case-list"></div>
+          <div id="appealList" class="case-list"></div>
           <div id="moderationPanel" class="moderation-panel hidden">
             <div class="section-divider"></div>
             <div class="panel-head">
-              <h2>Moderation</h2>
-              <button id="auditRefreshButton" class="icon-button" type="button" title="Refresh audit log">Audit</button>
+              <h2>Admin</h2>
+              <button id="auditRefreshButton" class="icon-button" type="button" title="Refresh admin data">Refresh</button>
             </div>
+            <form id="spaceForm" class="stack">
+              <label for="spaceNameInput">Space name</label>
+              <input id="spaceNameInput" name="name" type="text" placeholder="Example Org" required>
+              <label for="spaceDomainsInput">Allowed domains</label>
+              <input id="spaceDomainsInput" name="allowed_domains" type="text" placeholder="example.org, example.edu">
+              <button type="submit">Request space</button>
+            </form>
+            <div id="approvalList" class="case-list"></div>
             <form id="banForm" class="stack">
               <label for="banUserHashInput">User hash</label>
               <input id="banUserHashInput" name="user_hash" type="text" placeholder="target user_hash" required>
@@ -96,6 +105,11 @@
             <p id="moderationStatus" class="status"></p>
             <div id="auditLogList" class="audit-log-list"></div>
           </div>
+          <div class="section-divider"></div>
+          <div class="panel-head">
+            <h2>Public Audit</h2>
+          </div>
+          <div id="publicAuditLogList" class="audit-log-list"></div>
         </aside>
       </section>
     </main>
@@ -130,9 +144,48 @@
           <div><dt>Dismiss</dt><dd class="case-dismiss"></dd></div>
         </dl>
         <div class="case-actions hidden">
+          <select class="case-action">
+            <option value="hide_content">Hide content</option>
+            <option value="ban_user">Ban user</option>
+          </select>
           <button class="vote-violation" type="button">Violation</button>
           <button class="secondary vote-dismiss" type="button">Dismiss</button>
         </div>
+      </article>
+    </template>
+
+    <template id="appealTemplate">
+      <article class="case-item">
+        <div class="item-head">
+          <strong class="appeal-title"></strong>
+          <span class="badge appeal-status"></span>
+        </div>
+        <p class="muted appeal-reason"></p>
+        <dl class="case-meta">
+          <div><dt>Approve</dt><dd class="appeal-approve"></dd></div>
+          <div><dt>Dismiss</dt><dd class="appeal-dismiss"></dd></div>
+          <div><dt>Target</dt><dd class="appeal-target"></dd></div>
+        </dl>
+        <div class="appeal-actions hidden">
+          <button class="appeal-approve-button" type="button">Approve</button>
+          <button class="secondary appeal-dismiss-button" type="button">Dismiss</button>
+        </div>
+      </article>
+    </template>
+
+    <template id="approvalTemplate">
+      <article class="case-item">
+        <div class="item-head">
+          <strong class="approval-title"></strong>
+          <span class="badge approval-status"></span>
+        </div>
+        <p class="muted approval-detail"></p>
+        <dl class="case-meta">
+          <div><dt>Approvals</dt><dd class="approval-count"></dd></div>
+          <div><dt>Required</dt><dd class="approval-required"></dd></div>
+          <div><dt>Created</dt><dd class="approval-time"></dd></div>
+        </dl>
+        <button class="approval-approve-button" type="button">Approve</button>
       </article>
     </template>
 

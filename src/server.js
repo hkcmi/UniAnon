@@ -242,6 +242,7 @@ function serializeApprovalRequest(request) {
   return {
     id: request.id,
     operation: request.operation,
+    payload: request.payload,
     status: request.status,
     approvals_count: request.approvals.length,
     required_approvals: config.highImpactApprovalCount,
@@ -315,6 +316,7 @@ function serializeAppealCase(appealCase) {
     appellant_hash: appealCase.appellant_hash,
     target_type: appealCase.target_type,
     target_id: appealCase.target_id,
+    reason: appealCase.reason,
     status: appealCase.status,
     approve_weight: approveWeight,
     dismiss_weight: dismissWeight,

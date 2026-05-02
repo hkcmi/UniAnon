@@ -4,7 +4,10 @@ const state = {
   spaces: [],
   posts: [],
   cases: [],
+  appeals: [],
+  approvals: [],
   auditLog: [],
+  publicAuditLog: [],
   activeSpaceId: 'public'
 };
 
@@ -29,15 +32,23 @@ const elements = {
   postContent: document.querySelector('#postContent'),
   postList: document.querySelector('#postList'),
   caseList: document.querySelector('#caseList'),
+  appealList: document.querySelector('#appealList'),
   moderationPanel: document.querySelector('#moderationPanel'),
   auditRefreshButton: document.querySelector('#auditRefreshButton'),
+  spaceForm: document.querySelector('#spaceForm'),
+  spaceNameInput: document.querySelector('#spaceNameInput'),
+  spaceDomainsInput: document.querySelector('#spaceDomainsInput'),
+  approvalList: document.querySelector('#approvalList'),
   banForm: document.querySelector('#banForm'),
   banUserHashInput: document.querySelector('#banUserHashInput'),
   banReasonInput: document.querySelector('#banReasonInput'),
   moderationStatus: document.querySelector('#moderationStatus'),
   auditLogList: document.querySelector('#auditLogList'),
+  publicAuditLogList: document.querySelector('#publicAuditLogList'),
   postTemplate: document.querySelector('#postTemplate'),
   caseTemplate: document.querySelector('#caseTemplate'),
+  appealTemplate: document.querySelector('#appealTemplate'),
+  approvalTemplate: document.querySelector('#approvalTemplate'),
   auditTemplate: document.querySelector('#auditTemplate')
 };
 
@@ -154,11 +165,22 @@ function renderPosts() {
     for (const comment of post.comments) {
       const item = document.createElement('div');
       item.className = 'comment';
+      const commentHead = document.createElement('div');
+      commentHead.className = 'comment-head';
       const author = document.createElement('strong');
       author.textContent = comment.nickname;
+      const reportCommentButton = document.createElement('button');
+      reportCommentButton.type = 'button';
+      reportCommentButton.className = 'secondary mini-button';
+      reportCommentButton.textContent = 'Report';
+      reportCommentButton.classList.toggle('hidden', !state.user || !state.user.nickname);
+      reportCommentButton.addEventListener('click', async () => {
+        await reportTarget('comment', comment.id);
+      });
       const content = document.createElement('span');
       content.textContent = comment.content;
-      item.append(author, content);
+      commentHead.append(author, reportCommentButton);
+      item.append(commentHead, content);
       comments.append(item);
     }
 
@@ -216,13 +238,95 @@ function renderCases() {
 
     const actions = node.querySelector('.case-actions');
     actions.classList.toggle('hidden', moderationCase.status !== 'open');
+    const actionSelect = node.querySelector('.case-action');
+    actionSelect.value = moderationCase.target_type === 'user' ? 'ban_user' : 'hide_content';
     node.querySelector('.vote-violation').addEventListener('click', async () => {
-      await vote(moderationCase.id, 'violation', 'hide_content');
+      await vote(moderationCase.id, 'violation', actionSelect.value);
     });
     node.querySelector('.vote-dismiss').addEventListener('click', async () => {
       await vote(moderationCase.id, 'dismiss', 'none');
     });
     elements.caseList.append(node);
+  }
+}
+
+function renderAppeals() {
+  elements.appealList.replaceChildren();
+
+  if (!state.user || state.user.trust_level < 2) {
+    return;
+  }
+
+  const heading = document.createElement('h3');
+  heading.textContent = 'Appeals';
+  elements.appealList.append(heading);
+
+  if (state.appeals.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'muted';
+    empty.textContent = 'No appeals.';
+    elements.appealList.append(empty);
+    return;
+  }
+
+  for (const appeal of state.appeals) {
+    const node = elements.appealTemplate.content.firstElementChild.cloneNode(true);
+    node.querySelector('.appeal-title').textContent = `${appeal.target_type} appeal`;
+    node.querySelector('.appeal-status').textContent = appeal.status;
+    node.querySelector('.appeal-reason').textContent = appeal.reason || 'No reason provided';
+    node.querySelector('.appeal-approve').textContent = String(appeal.approve_weight);
+    node.querySelector('.appeal-dismiss').textContent = String(appeal.dismiss_weight);
+    node.querySelector('.appeal-target').textContent = shortHash(appeal.target_id);
+
+    const actions = node.querySelector('.appeal-actions');
+    actions.classList.toggle('hidden', appeal.status !== 'open');
+    node.querySelector('.appeal-approve-button').addEventListener('click', async () => {
+      await voteAppeal(appeal.id, 'approve');
+    });
+    node.querySelector('.appeal-dismiss-button').addEventListener('click', async () => {
+      await voteAppeal(appeal.id, 'dismiss');
+    });
+    elements.appealList.append(node);
+  }
+}
+
+function renderApprovals() {
+  elements.approvalList.replaceChildren();
+
+  if (!state.user?.roles.includes('moderator') && !state.user?.roles.includes('system_admin')) {
+    return;
+  }
+
+  const heading = document.createElement('h3');
+  heading.textContent = 'Approvals';
+  elements.approvalList.append(heading);
+
+  if (state.approvals.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'muted';
+    empty.textContent = 'No approval requests.';
+    elements.approvalList.append(empty);
+    return;
+  }
+
+  for (const approval of state.approvals) {
+    const node = elements.approvalTemplate.content.firstElementChild.cloneNode(true);
+    const payload = approval.payload || {};
+    node.querySelector('.approval-title').textContent = approval.operation.replaceAll('_', ' ');
+    node.querySelector('.approval-status').textContent = approval.status;
+    node.querySelector('.approval-detail').textContent = payload.name
+      ? `${payload.name} - ${(payload.allowed_domains || []).join(', ') || 'all verified domains'}`
+      : approval.id;
+    node.querySelector('.approval-count').textContent = String(approval.approvals_count);
+    node.querySelector('.approval-required').textContent = String(approval.required_approvals);
+    node.querySelector('.approval-time').textContent = formatTime(approval.created_at);
+
+    const approveButton = node.querySelector('.approval-approve-button');
+    approveButton.classList.toggle('hidden', approval.status !== 'open');
+    approveButton.addEventListener('click', async () => {
+      await approveRequest(approval);
+    });
+    elements.approvalList.append(node);
   }
 }
 
@@ -249,6 +353,28 @@ function renderAuditLog() {
     node.querySelector('.audit-target').textContent = shortHash(event.target_hash || event.target_id);
     node.querySelector('.audit-reason').textContent = event.reason;
     elements.auditLogList.append(node);
+  }
+}
+
+function renderPublicAuditLog() {
+  elements.publicAuditLogList.replaceChildren();
+
+  if (state.publicAuditLog.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'muted';
+    empty.textContent = 'No public audit events.';
+    elements.publicAuditLogList.append(empty);
+    return;
+  }
+
+  for (const event of state.publicAuditLog.slice(0, 8)) {
+    const node = elements.auditTemplate.content.firstElementChild.cloneNode(true);
+    node.querySelector('.audit-operation').textContent = event.operation;
+    node.querySelector('.audit-time').textContent = formatTime(event.created_at);
+    node.querySelector('.audit-actor').textContent = event.actor_ref || 'system';
+    node.querySelector('.audit-target').textContent = event.target_ref || event.target_type || 'none';
+    node.querySelector('.audit-reason').textContent = event.reason;
+    elements.publicAuditLogList.append(node);
   }
 }
 
@@ -303,6 +429,38 @@ async function loadCases() {
   renderCases();
 }
 
+async function loadAppeals() {
+  if (!state.user || state.user.trust_level < 2) {
+    state.appeals = [];
+    renderAppeals();
+    return;
+  }
+
+  try {
+    const payload = await api('/appeals');
+    state.appeals = payload.appeals;
+  } catch {
+    state.appeals = [];
+  }
+  renderAppeals();
+}
+
+async function loadApprovals() {
+  if (!state.user?.roles.includes('moderator') && !state.user?.roles.includes('system_admin')) {
+    state.approvals = [];
+    renderApprovals();
+    return;
+  }
+
+  try {
+    const payload = await api('/approvals');
+    state.approvals = payload.approvals;
+  } catch {
+    state.approvals = [];
+  }
+  renderApprovals();
+}
+
 async function loadAuditLog() {
   if (!state.user?.roles.includes('moderator') && !state.user?.roles.includes('system_admin')) {
     state.auditLog = [];
@@ -319,12 +477,25 @@ async function loadAuditLog() {
   renderAuditLog();
 }
 
+async function loadPublicAuditLog() {
+  try {
+    const payload = await api('/audit-log');
+    state.publicAuditLog = payload.audit_log;
+  } catch {
+    state.publicAuditLog = [];
+  }
+  renderPublicAuditLog();
+}
+
 async function refreshAll() {
   await loadMe();
   await loadSpaces();
   await loadPosts();
   await loadCases();
+  await loadAppeals();
+  await loadApprovals();
   await loadAuditLog();
+  await loadPublicAuditLog();
 }
 
 async function reportTarget(targetType, targetId) {
@@ -353,8 +524,41 @@ async function vote(caseId, decision, action) {
     });
     await loadPosts();
     await loadCases();
+    await loadPublicAuditLog();
   } catch (error) {
     alert(error.payload?.message || error.payload?.error || error.message);
+  }
+}
+
+async function voteAppeal(appealId, decision) {
+  try {
+    await api(`/appeals/${appealId}/votes`, {
+      method: 'POST',
+      body: JSON.stringify({ decision })
+    });
+    await loadAppeals();
+    await loadPublicAuditLog();
+  } catch (error) {
+    alert(error.payload?.message || error.payload?.error || error.message);
+  }
+}
+
+async function approveRequest(approval) {
+  if (approval.operation !== 'create_space') {
+    return;
+  }
+
+  try {
+    await api('/spaces', {
+      method: 'POST',
+      body: JSON.stringify(approval.payload)
+    });
+    await loadSpaces();
+    await loadApprovals();
+    await loadAuditLog();
+    await loadPublicAuditLog();
+  } catch (error) {
+    setStatus(elements.moderationStatus, error.payload?.message || error.payload?.error || error.message);
   }
 }
 
@@ -424,6 +628,33 @@ elements.postForm.addEventListener('submit', async (event) => {
   await loadPosts();
 });
 
+elements.spaceForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  setStatus(elements.moderationStatus, 'Requesting space...');
+  try {
+    const allowedDomains = elements.spaceDomainsInput.value
+      .split(',')
+      .map((domain) => domain.trim().toLowerCase())
+      .filter(Boolean);
+    const payload = await api('/spaces', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: elements.spaceNameInput.value,
+        allowed_domains: allowedDomains
+      })
+    });
+    elements.spaceNameInput.value = '';
+    elements.spaceDomainsInput.value = '';
+    setStatus(elements.moderationStatus, payload.space ? 'Space created.' : 'Approval requested.');
+    await loadSpaces();
+    await loadApprovals();
+    await loadAuditLog();
+    await loadPublicAuditLog();
+  } catch (error) {
+    setStatus(elements.moderationStatus, error.payload?.message || error.payload?.error || error.message);
+  }
+});
+
 elements.banForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   setStatus(elements.moderationStatus, 'Banning...');
@@ -439,6 +670,7 @@ elements.banForm.addEventListener('submit', async (event) => {
     elements.banReasonInput.value = '';
     setStatus(elements.moderationStatus, 'User banned.');
     await loadAuditLog();
+    await loadPublicAuditLog();
   } catch (error) {
     setStatus(elements.moderationStatus, error.payload?.message || error.payload?.error || error.message);
   }
@@ -448,12 +680,18 @@ elements.logoutButton.addEventListener('click', async () => {
   state.token = '';
   state.user = null;
   state.cases = [];
+  state.appeals = [];
+  state.approvals = [];
   localStorage.removeItem('unianon:token');
   await refreshAll();
 });
 
 elements.refreshButton.addEventListener('click', refreshAll);
-elements.auditRefreshButton.addEventListener('click', loadAuditLog);
+elements.auditRefreshButton.addEventListener('click', async () => {
+  await loadApprovals();
+  await loadAuditLog();
+  await loadPublicAuditLog();
+});
 
 refreshAll().catch((error) => {
   console.error(error);

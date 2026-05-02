@@ -48,7 +48,7 @@ The API defaults to `http://localhost:3000`.
 
 Copy `.env.example` to `.env` for local configuration.
 
-Open `http://localhost:3000` after starting the server to use the local web UI.
+Open `http://localhost:3000` after starting the server to use the local web UI. The UI supports posting, commenting, reporting, jury voting, appeal review, moderator space approvals, direct moderation actions, and public/admin audit views for local governance testing.
 
 Seed local demo data:
 

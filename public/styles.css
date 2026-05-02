@@ -27,6 +27,7 @@ body {
 
 button,
 input,
+select,
 textarea {
   font: inherit;
 }
@@ -39,6 +40,7 @@ button {
   color: #ffffff;
   padding: 0 14px;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 button:hover {
@@ -62,7 +64,14 @@ button.icon-button {
   border-color: var(--line);
 }
 
+button.mini-button {
+  min-height: 28px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
 input,
+select,
 textarea {
   width: 100%;
   border: 1px solid var(--line);
@@ -73,6 +82,7 @@ textarea {
 }
 
 input:focus,
+select:focus,
 textarea:focus,
 button:focus {
   outline: 2px solid var(--focus);
@@ -85,6 +95,7 @@ textarea {
 
 h1,
 h2,
+h3,
 p {
   margin: 0;
 }
@@ -96,6 +107,12 @@ h1 {
 
 h2 {
   font-size: 16px;
+}
+
+h3 {
+  color: var(--muted);
+  font-size: 13px;
+  text-transform: uppercase;
 }
 
 .topbar {
@@ -199,6 +216,10 @@ h2 {
   gap: 10px;
 }
 
+.case-list + .case-list {
+  margin-top: 14px;
+}
+
 .space-button {
   width: 100%;
   justify-content: flex-start;
@@ -247,6 +268,13 @@ h2 {
   border-left: 3px solid #d9c27a;
 }
 
+.comment-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .muted {
   color: var(--muted);
   font-size: 13px;
@@ -275,9 +303,14 @@ h2 {
   font-weight: 700;
 }
 
-.case-actions {
+.case-actions,
+.appeal-actions {
   display: flex;
   gap: 8px;
+}
+
+.case-actions select {
+  min-width: 130px;
 }
 
 .moderation-panel {
