@@ -247,6 +247,8 @@ The app loads SQLite records into memory at startup and writes changes back to S
 
 For backup, restore, and restore-drill procedures, see [BACKUP_RESTORE.md](BACKUP_RESTORE.md).
 
+For incident response, forced re-login, and secret rotation procedures, see [INCIDENT_RESPONSE.md](INCIDENT_RESPONSE.md).
+
 ## Demo Accounts
 
 After running `npm run seed:demo`, use these emails in the web UI:

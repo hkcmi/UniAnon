@@ -209,6 +209,8 @@ If restoring after compromise:
 - If `MEMBERSHIP_ASSERTION_SECRET` may be compromised, invalidate old assertions by rotating it.
 - If session tokens may be compromised, delete rows from `sessions` after restore to force re-login.
 
+Use [INCIDENT_RESPONSE.md](INCIDENT_RESPONSE.md) for the full incident and secret-rotation procedure.
+
 Force re-login:
 
 ```sql

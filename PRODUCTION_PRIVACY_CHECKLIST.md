@@ -40,6 +40,7 @@ Use long random values. Do not reuse the same value across secret roles.
 - [ ] All five secrets are distinct.
 - [ ] Secrets are stored outside Git, for example in deployment secrets or a protected `.env`.
 - [ ] Secrets are included in backup and recovery procedures.
+- [ ] [INCIDENT_RESPONSE.md](INCIDENT_RESPONSE.md) has been reviewed for secret rotation and forced re-login.
 - [ ] The team understands that rotating `AUTH_SUBJECT_SECRET` or `NULLIFIER_SECRET` changes identity/nullifier derivation and can break account continuity or ban persistence.
 
 Generate a secret:
