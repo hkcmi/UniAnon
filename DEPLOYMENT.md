@@ -30,6 +30,7 @@ Important variables:
 
 ```bash
 PORT=3000
+TRUST_PROXY=
 DATABASE_PATH=data/unianon.sqlite
 REDIS_URL=
 SERVER_SECRET=replace-me-with-a-long-random-secret
@@ -53,6 +54,8 @@ ADMIN_PROTECTION_APPROVAL_WEIGHT=8
 ```
 
 Use long random secrets for any shared environment. `AUTH_SUBJECT_SECRET` controls the stable anonymous subject derived after email verification. Changing it will change user identities, so treat it as persistent instance identity. `MEMBERSHIP_ASSERTION_SECRET` signs short-lived membership assertions passed from the auth boundary to the community boundary.
+
+Set `TRUST_PROXY=loopback` or a specific proxy subnet only when UniAnon runs behind a trusted reverse proxy that sets `X-Forwarded-*` headers. Do not trust arbitrary client-supplied forwarding headers on a directly exposed app port.
 
 ## Email Delivery
 
@@ -80,6 +83,67 @@ Use `SMTP_SECURE=true` for providers that require implicit TLS, usually on port 
 SMTP providers necessarily see recipient email addresses. See [PRIVACY.md](PRIVACY.md) before choosing a delivery provider.
 
 Before running a real community or privacy-sensitive pilot, complete [PRODUCTION_PRIVACY_CHECKLIST.md](PRODUCTION_PRIVACY_CHECKLIST.md).
+
+## Reverse Proxy And TLS
+
+Production deployments should terminate TLS at a reverse proxy such as Caddy, Nginx, Traefik, or a managed load balancer. The Node app should not be directly exposed to the public internet.
+
+Required properties:
+
+- Public traffic uses HTTPS only.
+- `APP_BASE_URL` is the public HTTPS origin.
+- The proxy forwards `Host`, `X-Forwarded-For`, and `X-Forwarded-Proto`.
+- `TRUST_PROXY` is set only to the trusted proxy hop or subnet.
+- The app port is reachable only from the proxy or private network.
+- Proxy access logs do not include request bodies, magic tokens, authorization codes, `id_token`, session tokens, or membership assertions.
+- Upload/body size limits stay small; the app currently accepts JSON up to `64kb`.
+- HTTP-to-HTTPS redirect is enabled at the proxy.
+- HSTS is enabled after the HTTPS deployment is confirmed stable.
+
+Example Caddy configuration:
+
+```caddyfile
+unianon.example.org {
+  encode zstd gzip
+  reverse_proxy 127.0.0.1:3000
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains"
+  }
+  log {
+    output file /var/log/caddy/unianon-access.log
+    format console
+  }
+}
+```
+
+Example Nginx location:
+
+```nginx
+server {
+  listen 443 ssl http2;
+  server_name unianon.example.org;
+
+  client_max_body_size 128k;
+  add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
+  location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+}
+```
+
+For Docker Compose on a single host, prefer binding UniAnon to localhost behind the proxy:
+
+```bash
+PORT=127.0.0.1:3000 docker compose up -d
+```
+
+If your Compose implementation does not support host IPs through `PORT`, edit the port mapping to `127.0.0.1:3000:3000` for that deployment.
 
 ## Local Npm Run
 

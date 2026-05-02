@@ -69,6 +69,7 @@ Useful environment variables:
 
 ```bash
 PORT=3000
+TRUST_PROXY=
 DATABASE_PATH=data/unianon.sqlite
 REDIS_URL=
 SERVER_SECRET=replace-me-with-a-long-random-secret
@@ -340,6 +341,8 @@ See [PRODUCTION_PRIVACY_CHECKLIST.md](PRODUCTION_PRIVACY_CHECKLIST.md) before ru
 See [BACKUP_RESTORE.md](BACKUP_RESTORE.md) for SQLite backup, restore, and restore-drill procedures.
 
 See [OPTIONAL_INTEGRATIONS.md](OPTIONAL_INTEGRATIONS.md) for the policy that keeps NodeBB and other bridges optional rather than core dependencies.
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for reverse proxy, TLS, and production hardening notes.
 
 ## Trust Levels
 

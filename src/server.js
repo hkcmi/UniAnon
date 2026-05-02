@@ -29,6 +29,9 @@ export const rateLimiter = createRateLimiter();
 export const mailer = createMailer();
 export const app = express();
 
+if (config.trustProxy) {
+  app.set('trust proxy', config.trustProxy);
+}
 app.use(helmet());
 app.use(express.json({ limit: '64kb' }));
 app.use(express.static('public'));

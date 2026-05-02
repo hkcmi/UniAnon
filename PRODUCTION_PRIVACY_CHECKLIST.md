@@ -10,6 +10,9 @@ Do not launch until every item in this section is complete.
 
 - [ ] `NODE_ENV=production` is set for the app process.
 - [ ] `APP_BASE_URL` uses the real HTTPS origin and does not contain `localhost`.
+- [ ] TLS terminates at a reverse proxy or managed load balancer.
+- [ ] The Node app port is reachable only from the proxy or private network.
+- [ ] `TRUST_PROXY` is set only for a trusted proxy hop or subnet.
 - [ ] `ALLOWED_DOMAINS` contains only domains approved for this community.
 - [ ] Demo seed data has not been loaded into the production database.
 - [ ] The production database is a fresh, access-controlled SQLite file or volume.
@@ -99,6 +102,7 @@ PRAGMA table_info(auth_events);
 ## Logging
 
 - [ ] Reverse proxy logs do not record request bodies.
+- [ ] Reverse proxy logs do not record sensitive query parameters such as OIDC `code` or magic-link tokens.
 - [ ] App logs do not print magic tokens, session tokens, membership assertions, ID tokens, or authorization codes.
 - [ ] Error reporting tools, if any, scrub `authorization`, `cookie`, `token`, `code`, `id_token`, and `membership_assertion`.
 - [ ] Access logs have an explicit retention period.
@@ -147,6 +151,8 @@ PRAGMA table_info(auth_events);
 ## Browser And Frontend
 
 - [ ] The deployment uses HTTPS.
+- [ ] HTTP requests redirect to HTTPS at the proxy.
+- [ ] HSTS is enabled after HTTPS is verified.
 - [ ] Cookies/local storage/session storage policy has been reviewed.
 - [ ] Browser console does not log tokens or identity assertions.
 - [ ] Frontend error reporting, if added later, scrubs tokens and assertions.

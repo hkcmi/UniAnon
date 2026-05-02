@@ -5,6 +5,7 @@ services:
       - "${PORT:-3000}:3000"
     environment:
       PORT: 3000
+      TRUST_PROXY: ${TRUST_PROXY:-}
       DATABASE_PATH: /app/data/unianon.sqlite
       REDIS_URL: redis://redis:6379
       SERVER_SECRET: ${SERVER_SECRET:-dev-only-change-me}

@@ -10,6 +10,7 @@ function productionConfig(overrides = {}) {
     authLogSecret: 'auth-log-secret-1234567890123456789012',
     nullifierSecret: 'nullifier-secret-123456789012345678901',
     membershipAssertionSecret: 'assertion-secret-12345678901234567890',
+    trustProxy: 'loopback',
     allowedDomains: ['example.edu'],
     emailDelivery: 'smtp',
     appBaseUrl: 'https://unianon.example.edu',
