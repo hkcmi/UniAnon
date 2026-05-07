@@ -84,6 +84,8 @@ SMTP providers necessarily see recipient email addresses. See [PRIVACY.md](PRIVA
 
 Before running a real community or privacy-sensitive pilot, complete [PRODUCTION_PRIVACY_CHECKLIST.md](PRODUCTION_PRIVACY_CHECKLIST.md).
 
+For first-time community setup, role assignment, governance drills, and launch records, see [FIRST_COMMUNITY_LAUNCH.md](FIRST_COMMUNITY_LAUNCH.md).
+
 ## Reverse Proxy And TLS
 
 Production deployments should terminate TLS at a reverse proxy such as Caddy, Nginx, Traefik, or a managed load balancer. The Node app should not be directly exposed to the public internet.

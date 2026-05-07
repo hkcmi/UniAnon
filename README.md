@@ -342,6 +342,8 @@ See [BACKUP_RESTORE.md](BACKUP_RESTORE.md) for SQLite backup, restore, and resto
 
 See [INCIDENT_RESPONSE.md](INCIDENT_RESPONSE.md) for incident response and secret rotation procedures.
 
+See [FIRST_COMMUNITY_LAUNCH.md](FIRST_COMMUNITY_LAUNCH.md) for the admin-facing first community launch guide.
+
 See [OPTIONAL_INTEGRATIONS.md](OPTIONAL_INTEGRATIONS.md) for the policy that keeps NodeBB and other bridges optional rather than core dependencies.
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for reverse proxy, TLS, and production hardening notes.

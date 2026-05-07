@@ -15,6 +15,7 @@ Do not launch until every item in this section is complete.
 - [ ] `TRUST_PROXY` is set only for a trusted proxy hop or subnet.
 - [ ] `ALLOWED_DOMAINS` contains only domains approved for this community.
 - [ ] Demo seed data has not been loaded into the production database.
+- [ ] [FIRST_COMMUNITY_LAUNCH.md](FIRST_COMMUNITY_LAUNCH.md) has been completed for this community.
 - [ ] The production database is a fresh, access-controlled SQLite file or volume.
 - [ ] `schema_migrations` exists and shows all expected migrations.
 - [ ] `npm test` passes on the exact build being deployed.
