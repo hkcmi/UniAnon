@@ -499,6 +499,15 @@ test('opens a moderation case from weighted reports and resolves by jury vote', 
   const reportResult = await reportResponse.json();
   assert.equal(reportResult.case.status, 'open');
   assert.equal(reportResult.case.juror_count, 1);
+  assert.equal(reportResult.case.approval_threshold, 3);
+  assert.equal(reportResult.case.target.type, 'post');
+  assert.equal(reportResult.case.target.content_excerpt, 'Content that should be reviewed.');
+  assert.equal(reportResult.case.target.author_nickname, 'case_accused');
+  assert.equal(reportResult.case.accused.nickname, 'case_accused');
+  assert.equal(reportResult.case.reports.length, 1);
+  assert.equal(reportResult.case.reports[0].reason, 'Policy violation');
+  assert.equal(reportResult.case.reports[0].weight, 3);
+  assert.match(reportResult.case.reports[0].actor_ref, /^[a-f0-9]{12}$/);
   assert.equal(reportResult.report_weight, 3);
   assert.equal(reportResult.report_threshold, 3);
 
@@ -532,6 +541,11 @@ test('opens a moderation case from weighted reports and resolves by jury vote', 
   const voteResult = await voteResponse.json();
   assert.equal(voteResult.case.status, 'resolved');
   assert.equal(voteResult.case.resolution.action, 'hide_content');
+  assert.equal(voteResult.case.votes.length, 1);
+  assert.equal(voteResult.case.votes[0].decision, 'violation');
+  assert.equal(voteResult.case.votes[0].action, 'hide_content');
+  assert.match(voteResult.case.votes[0].actor_ref, /^[a-f0-9]{12}$/);
+  assert.equal(voteResult.case.votes[0].actor_ref.includes(juror.user.user_hash), false);
 
   const list = await fetch(`${baseUrl}/posts`);
   const { posts } = await list.json();
@@ -619,6 +633,10 @@ test('allows banned users to appeal with a membership assertion', async () => {
   const listedAppeal = appeals.find((appeal) => appeal.id === appealResult.appeal.id);
   assert.equal(Boolean(listedAppeal), true);
   assert.equal(listedAppeal.reason, 'The ban should be reviewed.');
+  assert.equal(listedAppeal.appellant.nickname, 'appeal_target');
+  assert.equal(listedAppeal.target.type, 'user');
+  assert.equal(listedAppeal.target.user.nickname, 'appeal_target');
+  assert.match(listedAppeal.target.id, /^[a-f0-9]{12}$/);
 
   const voteResponse = await fetch(`${baseUrl}/appeals/${appealResult.appeal.id}/votes`, {
     method: 'POST',
@@ -632,6 +650,9 @@ test('allows banned users to appeal with a membership assertion', async () => {
   const voteResult = await voteResponse.json();
   assert.equal(voteResult.appeal.status, 'resolved');
   assert.equal(voteResult.appeal.resolution.action, 'restore_access');
+  assert.equal(voteResult.appeal.votes.length, 1);
+  assert.equal(voteResult.appeal.votes[0].decision, 'approve');
+  assert.match(voteResult.appeal.votes[0].actor_ref, /^[a-f0-9]{12}$/);
   assert.equal(store.users.get(target.user.user_hash).banned, false);
   assert.equal(store.auditLog.some((event) => event.operation === 'appeal_decision'), true);
   assert.equal(store.auditLog.some((event) => event.operation === 'unban'), true);

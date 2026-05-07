@@ -138,11 +138,21 @@
           <strong class="case-title"></strong>
           <span class="badge case-status"></span>
         </div>
+        <p class="case-target evidence-box"></p>
         <dl class="case-meta">
           <div><dt>Reports</dt><dd class="case-reports"></dd></div>
           <div><dt>Violation</dt><dd class="case-violation"></dd></div>
           <div><dt>Dismiss</dt><dd class="case-dismiss"></dd></div>
+          <div><dt>Threshold</dt><dd class="case-threshold"></dd></div>
+          <div><dt>Jurors</dt><dd class="case-jurors"></dd></div>
+          <div><dt>Accused</dt><dd class="case-accused"></dd></div>
         </dl>
+        <details class="case-detail">
+          <summary>Evidence</summary>
+          <div class="evidence-list case-report-list"></div>
+          <div class="evidence-list case-vote-list"></div>
+          <p class="case-resolution muted"></p>
+        </details>
         <div class="case-actions hidden">
           <select class="case-action">
             <option value="hide_content">Hide content</option>
@@ -161,11 +171,17 @@
           <span class="badge appeal-status"></span>
         </div>
         <p class="muted appeal-reason"></p>
+        <p class="appeal-target-summary evidence-box"></p>
         <dl class="case-meta">
           <div><dt>Approve</dt><dd class="appeal-approve"></dd></div>
           <div><dt>Dismiss</dt><dd class="appeal-dismiss"></dd></div>
-          <div><dt>Target</dt><dd class="appeal-target"></dd></div>
+          <div><dt>Appellant</dt><dd class="appeal-appellant"></dd></div>
         </dl>
+        <details class="case-detail">
+          <summary>Votes</summary>
+          <div class="evidence-list appeal-vote-list"></div>
+          <p class="appeal-resolution muted"></p>
+        </details>
         <div class="appeal-actions hidden">
           <button class="appeal-approve-button" type="button">Approve</button>
           <button class="secondary appeal-dismiss-button" type="button">Dismiss</button>

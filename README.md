@@ -251,6 +251,8 @@ Report weight is capped and based on the reporter's trust level. Protected users
 
 List moderation cases. Requires a trusted user with `trust_level >= 2`.
 
+Case responses include target summaries, accused user metadata, report evidence, jury assignments, vote summaries, and resolution state for evidence review. They do not include emails, raw membership nullifiers, or auth-provider identifiers.
+
 ### `POST /governance/cases/:caseId/votes`
 
 Submit a jury vote. Requires a trusted user with `trust_level >= 2`.
@@ -284,6 +286,8 @@ Open an appeal for a banned user or hidden post/comment. Active users can use a 
 ### `GET /appeals`
 
 List appeal cases. Requires a trusted user with `trust_level >= 2`.
+
+Appeal responses include the appellant, target summary, vote summaries, and resolution state using the same redacted evidence format.
 
 ### `POST /appeals/:appealId/votes`
 

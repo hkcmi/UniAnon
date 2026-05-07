@@ -119,6 +119,44 @@ function shortHash(value) {
   return `${value.slice(0, 8)}...${value.slice(-6)}`;
 }
 
+function targetSummary(target) {
+  if (!target) {
+    return 'Target unavailable.';
+  }
+
+  if (target.type === 'user') {
+    return `User ${target.user?.nickname || target.id} - ${target.user?.domain_group || 'unknown domain'}`;
+  }
+
+  return `${target.type} by ${target.author_nickname || 'unknown'}: ${target.content_excerpt || 'No content preview.'}`;
+}
+
+function resolutionSummary(resolution) {
+  if (!resolution) {
+    return '';
+  }
+
+  return `${resolution.decision || 'resolved'} / ${resolution.action || 'none'} - ${resolution.reason || 'no reason'}`;
+}
+
+function renderEvidenceList(container, items, emptyText, renderItem) {
+  container.replaceChildren();
+  if (!items || items.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'muted';
+    empty.textContent = emptyText;
+    container.append(empty);
+    return;
+  }
+
+  for (const item of items) {
+    const row = document.createElement('div');
+    row.className = 'evidence-item';
+    row.textContent = renderItem(item);
+    container.append(row);
+  }
+}
+
 function renderSpaces() {
   elements.spaceList.replaceChildren();
 
@@ -235,6 +273,23 @@ function renderCases() {
     node.querySelector('.case-reports').textContent = String(moderationCase.report_weight);
     node.querySelector('.case-violation').textContent = String(moderationCase.violation_weight);
     node.querySelector('.case-dismiss').textContent = String(moderationCase.dismiss_weight);
+    node.querySelector('.case-threshold').textContent = String(moderationCase.approval_threshold);
+    node.querySelector('.case-jurors').textContent = String(moderationCase.juror_count);
+    node.querySelector('.case-accused').textContent = moderationCase.accused?.nickname || shortHash(moderationCase.accused_hash);
+    node.querySelector('.case-target').textContent = targetSummary(moderationCase.target);
+    node.querySelector('.case-resolution').textContent = resolutionSummary(moderationCase.resolution);
+    renderEvidenceList(
+      node.querySelector('.case-report-list'),
+      moderationCase.reports,
+      'No report evidence.',
+      (report) => `${report.weight} weight from ${report.actor_ref}: ${report.reason}`
+    );
+    renderEvidenceList(
+      node.querySelector('.case-vote-list'),
+      moderationCase.votes,
+      'No jury votes yet.',
+      (vote) => `${vote.weight} weight ${vote.decision}${vote.action ? ` / ${vote.action}` : ''} from ${vote.actor_ref}`
+    );
 
     const actions = node.querySelector('.case-actions');
     actions.classList.toggle('hidden', moderationCase.status !== 'open');
@@ -274,9 +329,17 @@ function renderAppeals() {
     node.querySelector('.appeal-title').textContent = `${appeal.target_type} appeal`;
     node.querySelector('.appeal-status').textContent = appeal.status;
     node.querySelector('.appeal-reason').textContent = appeal.reason || 'No reason provided';
+    node.querySelector('.appeal-target-summary').textContent = targetSummary(appeal.target);
     node.querySelector('.appeal-approve').textContent = String(appeal.approve_weight);
     node.querySelector('.appeal-dismiss').textContent = String(appeal.dismiss_weight);
-    node.querySelector('.appeal-target').textContent = shortHash(appeal.target_id);
+    node.querySelector('.appeal-appellant').textContent = appeal.appellant?.nickname || shortHash(appeal.appellant_hash);
+    node.querySelector('.appeal-resolution').textContent = resolutionSummary(appeal.resolution);
+    renderEvidenceList(
+      node.querySelector('.appeal-vote-list'),
+      appeal.votes,
+      'No appeal votes yet.',
+      (vote) => `${vote.weight} weight ${vote.decision} from ${vote.actor_ref}`
+    );
 
     const actions = node.querySelector('.appeal-actions');
     actions.classList.toggle('hidden', appeal.status !== 'open');
