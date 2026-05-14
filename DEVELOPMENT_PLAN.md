@@ -187,15 +187,16 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 - [x] Implement OIDC callback browser handoff page.
 - [x] Add OIDC callback browser handoff tests.
 - [x] Add OIDC-only launch checklist command coverage.
+- [x] Add IdP claim-minimization example to launch guide.
 
 ## Suggested Next Sprint
 
 Recommended next tasks:
 
-1. Add IdP claim-minimization example to launch guide.
-2. Add OIDC handoff page styling.
-3. Add OIDC handoff failure page.
-4. Add readiness summary note for OIDC-only mode.
+1. Add OIDC handoff page styling.
+2. Add OIDC handoff failure page.
+3. Add readiness summary note for OIDC-only mode.
+4. Add OIDC handoff CSP-compatible no-inline-script option.
 
 Suggested implementation order:
 

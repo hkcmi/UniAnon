@@ -44,6 +44,13 @@ Preferred high-privacy mode:
 - Domain membership from `hd`, `domain`, or `domain_group`.
 - No `email` or `profile` scope unless explicitly accepted.
 
+Claim-minimization example:
+
+- Good: `{ "sub": "opaque-provider-id", "hd": "example.edu" }`
+- Good: `{ "sub": "opaque-provider-id", "domain_group": "example.edu" }`
+- Lower privacy: `{ "sub": "opaque-provider-id", "email": "person@example.edu" }`
+- Lower privacy: any claim set that includes name, department, role title, employee id, student id, or profile URL.
+
 Lower-privacy pilot mode:
 
 - SMTP magic links.
