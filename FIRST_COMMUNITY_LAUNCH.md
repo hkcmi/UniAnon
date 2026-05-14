@@ -273,6 +273,13 @@ Operator guidance:
 - Use audit events for governance accountability and metrics for system health; do not join them together.
 - Tell moderators that suppressed counts are a privacy feature, not missing data.
 
+Retention review:
+
+- Default aggregate metrics retention is 90 days.
+- Choose a shorter retention window if the community is small, politically sensitive, or in a high-risk environment.
+- Record the chosen retention period before launch.
+- Review retention again after the first week, after the first governance incident, and before enabling any new metric.
+
 ## Step 13: Launch Decision
 
 Launch only when:
@@ -303,6 +310,7 @@ Fill this in and keep it with deployment records:
 - Trusted launch jurors:
 - Backup location:
 - Incident lead:
+- Metrics retention period:
 - Accepted privacy tradeoffs:
 - Launch approved by:
 - Launch time:
