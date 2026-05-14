@@ -211,6 +211,7 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 - [x] Extract OIDC state tracking into a service boundary.
 - [x] Extract session token lookup into a service boundary.
 - [x] Add shared service factory for server infrastructure dependencies.
+- [x] Extract aggregate metrics into a privacy-preserving service boundary.
 
 ## Automation Backlog
 
