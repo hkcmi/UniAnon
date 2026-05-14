@@ -1,7 +1,7 @@
 import express from 'express';
 import helmet from 'helmet';
-import crypto from 'node:crypto';
 import { assertProductionConfig, config } from './config.js';
+import { createGovernanceViewService, publicAuditRef } from './governance-view-service.js';
 import {
   createEmailDigest,
   createScopedNullifier,
@@ -25,6 +25,9 @@ import { createServices } from './services.js';
 
 const services = createServices();
 export const { store, rateLimiter, mailer, oidcStateStore, sessionService } = services;
+export const governanceViews = createGovernanceViewService(store, {
+  approvalThresholdForCase: (moderationCase) => caseApprovalThreshold(moderationCase)
+});
 export const app = express();
 
 if (config.trustProxy) {
@@ -376,18 +379,6 @@ function serializeRoleTarget(user) {
   };
 }
 
-function publicAuditRef(value) {
-  if (!value) {
-    return null;
-  }
-
-  return crypto
-    .createHmac('sha256', config.serverSecret)
-    .update(`audit:${value}`)
-    .digest('hex')
-    .slice(0, 12);
-}
-
 function serializePublicAuditEvent(event) {
   return {
     id: event.id,
@@ -397,149 +388,6 @@ function serializePublicAuditEvent(event) {
     target_type: event.target_type || null,
     reason: event.reason,
     created_at: event.created_at
-  };
-}
-
-function excerpt(value, limit = 180) {
-  if (typeof value !== 'string') {
-    return '';
-  }
-
-  const normalized = value.replace(/\s+/g, ' ').trim();
-  return normalized.length > limit ? `${normalized.slice(0, limit - 1)}...` : normalized;
-}
-
-function serializeEvidenceUser(userHash) {
-  const user = store.users.get(userHash);
-  if (!user) {
-    return null;
-  }
-
-  return {
-    user_ref: publicAuditRef(user.user_hash),
-    nickname: user.nickname || '[unset]',
-    domain_group: user.domain_group,
-    trust_level: user.trust_level,
-    roles: user.roles,
-    banned: user.banned
-  };
-}
-
-function serializeTargetEvidence(targetType, targetId) {
-  if (targetType === 'post') {
-    const post = store.posts.get(targetId);
-    const author = post ? store.users.get(post.user_hash) : null;
-    return post ? {
-      type: 'post',
-      id: post.id,
-      author_ref: publicAuditRef(post.user_hash),
-      author_nickname: author?.nickname || '[deleted]',
-      content_excerpt: excerpt(post.content),
-      hidden: post.hidden,
-      created_at: post.created_at
-    } : null;
-  }
-
-  if (targetType === 'comment') {
-    const comment = store.comments.get(targetId);
-    const author = comment ? store.users.get(comment.user_hash) : null;
-    return comment ? {
-      type: 'comment',
-      id: comment.id,
-      post_id: comment.post_id,
-      author_ref: publicAuditRef(comment.user_hash),
-      author_nickname: author?.nickname || '[deleted]',
-      content_excerpt: excerpt(comment.content),
-      hidden: comment.hidden,
-      created_at: comment.created_at
-    } : null;
-  }
-
-  if (targetType === 'user') {
-    return {
-      type: 'user',
-      id: publicAuditRef(targetId),
-      user: serializeEvidenceUser(targetId)
-    };
-  }
-
-  return null;
-}
-
-function serializeCase(moderationCase) {
-  const reports = moderationCase.report_ids.map((reportId) => store.reports.get(reportId)).filter(Boolean);
-  const violationWeight = moderationCase.votes
-    .filter((vote) => vote.decision === 'violation')
-    .reduce((sum, vote) => sum + vote.weight, 0);
-  const dismissWeight = moderationCase.votes
-    .filter((vote) => vote.decision === 'dismiss')
-    .reduce((sum, vote) => sum + vote.weight, 0);
-
-  return {
-    id: moderationCase.id,
-    target_type: moderationCase.target_type,
-    target_id: moderationCase.target_id,
-    accused_hash: moderationCase.accused_hash,
-    status: moderationCase.status,
-    report_count: reports.length,
-    report_weight: reports.reduce((sum, report) => sum + report.weight, 0),
-    juror_count: moderationCase.juror_hashes?.length || 0,
-    approval_threshold: caseApprovalThreshold(moderationCase),
-    target: serializeTargetEvidence(moderationCase.target_type, moderationCase.target_id),
-    accused: serializeEvidenceUser(moderationCase.accused_hash),
-    reports: reports.map((report) => ({
-      id: report.id,
-      actor_ref: publicAuditRef(report.actor_hash),
-      reason: report.reason,
-      weight: report.weight,
-      created_at: report.created_at
-    })),
-    jurors: (moderationCase.juror_hashes || []).map((jurorHash) => ({
-      user_ref: publicAuditRef(jurorHash)
-    })),
-    votes: moderationCase.votes.map((vote) => ({
-      actor_ref: publicAuditRef(vote.voter_hash),
-      decision: vote.decision,
-      action: vote.action,
-      weight: vote.weight,
-      created_at: vote.created_at
-    })),
-    violation_weight: violationWeight,
-    dismiss_weight: dismissWeight,
-    created_at: moderationCase.created_at,
-    resolved_at: moderationCase.resolved_at,
-    resolution: moderationCase.resolution
-  };
-}
-
-function serializeAppealCase(appealCase) {
-  const approveWeight = appealCase.votes
-    .filter((vote) => vote.decision === 'approve')
-    .reduce((sum, vote) => sum + vote.weight, 0);
-  const dismissWeight = appealCase.votes
-    .filter((vote) => vote.decision === 'dismiss')
-    .reduce((sum, vote) => sum + vote.weight, 0);
-
-  return {
-    id: appealCase.id,
-    appellant_hash: appealCase.appellant_hash,
-    target_type: appealCase.target_type,
-    target_id: appealCase.target_id,
-    reason: appealCase.reason,
-    status: appealCase.status,
-    appellant: serializeEvidenceUser(appealCase.appellant_hash),
-    target: serializeTargetEvidence(appealCase.target_type, appealCase.target_id),
-    votes: appealCase.votes.map((vote) => ({
-      actor_ref: publicAuditRef(vote.voter_hash),
-      decision: vote.decision,
-      weight: vote.weight,
-      created_at: vote.created_at
-    })),
-    approve_weight: approveWeight,
-    dismiss_weight: dismissWeight,
-    created_at: appealCase.created_at,
-    resolved_at: appealCase.resolved_at,
-    resolution: appealCase.resolution
   };
 }
 
@@ -1255,14 +1103,14 @@ app.post('/reports', requireAuth, requireNickname, async (req, res) => {
     report_id: report.id,
     report_weight: totalReportWeight,
     report_threshold: reportThreshold,
-    case: moderationCase ? serializeCase(moderationCase) : null
+    case: moderationCase ? governanceViews.serializeCase(moderationCase) : null
   });
 });
 
 app.get('/governance/cases', requireAuth, requireTrustedJuror, (req, res) => {
   const cases = [...store.moderationCases.values()]
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
-    .map(serializeCase);
+    .map((moderationCase) => governanceViews.serializeCase(moderationCase));
 
   res.json({ cases });
 });
@@ -1273,7 +1121,7 @@ app.get('/governance/cases/:caseId', requireAuth, requireTrustedJuror, (req, res
     return res.status(404).json({ error: 'case_not_found' });
   }
 
-  return res.json({ case: serializeCase(moderationCase) });
+  return res.json({ case: governanceViews.serializeCase(moderationCase) });
 });
 
 app.post('/governance/cases/:caseId/votes', requireAuth, requireTrustedJuror, async (req, res) => {
@@ -1323,7 +1171,7 @@ app.post('/governance/cases/:caseId/votes', requireAuth, requireTrustedJuror, as
   }
 
   const resolvedCase = maybeResolveCase(result.moderationCase);
-  return res.status(201).json({ case: serializeCase(resolvedCase) });
+  return res.status(201).json({ case: governanceViews.serializeCase(resolvedCase) });
 });
 
 app.post('/appeals', (req, res) => {
@@ -1359,13 +1207,13 @@ app.post('/appeals', (req, res) => {
   }
 
   const appealCase = store.createAppealCase(appellant.user_hash, targetType, targetId, reason);
-  return res.status(201).json({ appeal: serializeAppealCase(appealCase) });
+  return res.status(201).json({ appeal: governanceViews.serializeAppealCase(appealCase) });
 });
 
 app.get('/appeals', requireAuth, requireTrustedJuror, (req, res) => {
   const appeals = [...store.appealCases.values()]
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
-    .map(serializeAppealCase);
+    .map((appealCase) => governanceViews.serializeAppealCase(appealCase));
 
   res.json({ appeals });
 });
@@ -1376,7 +1224,7 @@ app.get('/appeals/:appealId', requireAuth, requireTrustedJuror, (req, res) => {
     return res.status(404).json({ error: 'appeal_not_found' });
   }
 
-  return res.json({ appeal: serializeAppealCase(appealCase) });
+  return res.json({ appeal: governanceViews.serializeAppealCase(appealCase) });
 });
 
 app.post('/appeals/:appealId/votes', requireAuth, requireTrustedJuror, async (req, res) => {
@@ -1416,7 +1264,7 @@ app.post('/appeals/:appealId/votes', requireAuth, requireTrustedJuror, async (re
   }
 
   const resolvedAppeal = maybeResolveAppealCase(result.appealCase);
-  return res.status(201).json({ appeal: serializeAppealCase(resolvedAppeal) });
+  return res.status(201).json({ appeal: governanceViews.serializeAppealCase(resolvedAppeal) });
 });
 
 app.post('/moderation/ban', requireAuth, requireModerator, (req, res) => {
