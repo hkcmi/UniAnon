@@ -21,12 +21,14 @@ import {
   fetchJwks,
   verifyIdToken
 } from './oidc.js';
+import { createOidcStateStore } from './oidc-state-store.js';
 import { createRateLimiter } from './rate-limit.js';
 import { createStore } from './store.js';
 
 export const store = createStore();
 export const rateLimiter = createRateLimiter();
 export const mailer = createMailer();
+export const oidcStateStore = createOidcStateStore({ ttlMs: config.oidc.stateTtlMs });
 export const app = express();
 
 if (config.trustProxy) {
@@ -82,8 +84,6 @@ const errorMessages = {
   user_banned: 'This account is banned. You may open an appeal if eligible.'
 };
 
-const oidcStates = new Map();
-
 function sendOidcCallbackError(req, res, status, error) {
   const message = errorMessages[error] || errorMessages.oidc_invalid_callback;
   if (wantsHtml(req)) {
@@ -93,24 +93,11 @@ function sendOidcCallbackError(req, res, status, error) {
 }
 
 function storeOidcState(state, nonce) {
-  for (const [storedState, record] of oidcStates.entries()) {
-    if (record.expires_at < Date.now()) {
-      oidcStates.delete(storedState);
-    }
-  }
-  oidcStates.set(state, {
-    nonce,
-    expires_at: Date.now() + config.oidc.stateTtlMs
-  });
+  oidcStateStore.save(state, nonce);
 }
 
 function consumeOidcState(state) {
-  const record = oidcStates.get(state);
-  oidcStates.delete(state);
-  if (!record || record.expires_at < Date.now()) {
-    return null;
-  }
-  return record;
+  return oidcStateStore.consume(state);
 }
 
 function wantsHtml(req) {
