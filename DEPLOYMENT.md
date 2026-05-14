@@ -222,6 +222,10 @@ Readiness triage:
 - `FAIL database`: create or mount the production SQLite database, then rerun without `READINESS_SKIP_DB=true`.
 - Use `READINESS_SKIP_DB=true` only for configuration dry runs before the production database exists.
 
+Redis readiness warning:
+
+Missing Redis means rate-limit counters live only in the app process. That is acceptable for one-process local trials, but weak for Docker, restarts, or any deployment with more than one app process. For real pilots, set `REDIS_URL` and confirm readiness reports `[PASS] Redis`.
+
 ## Reverse Proxy And TLS
 
 Production deployments should terminate TLS at a reverse proxy such as Caddy, Nginx, Traefik, or a managed load balancer. The Node app should not be directly exposed to the public internet.
