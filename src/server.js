@@ -1,5 +1,6 @@
 import express from 'express';
 import helmet from 'helmet';
+import { createApprovalService } from './approval-service.js';
 import { createAuthService } from './auth-service.js';
 import { assertProductionConfig, config } from './config.js';
 import { createContentViewService } from './content-view-service.js';
@@ -42,6 +43,9 @@ export const governanceViews = createGovernanceViewService(store, {
 export const moderationTargets = createModerationTargetService(store);
 export const reportService = createReportService(store, {
   thresholdForAccused: (accusedHash) => reportThresholdForTarget(accusedHash)
+});
+export const approvalService = createApprovalService(store, {
+  requiredApprovals: config.highImpactApprovalCount
 });
 export const app = express();
 
@@ -733,29 +737,23 @@ app.post('/spaces', requireAuth, requireModerator, (req, res) => {
     name,
     allowed_domains: [...new Set(allowedDomains)].sort()
   };
-  const existing = store.findOpenApprovalRequest('create_space', payload);
-  const approvalRequest = existing || store.createApprovalRequest('create_space', payload, req.user.user_hash);
-
-  if (existing && existing.created_by === req.user.user_hash && !existing.approvals.some((hash) => hash !== req.user.user_hash)) {
+  const approval = approvalService.requestOrApprove('create_space', payload, req.user.user_hash);
+  if (!approval.ok) {
     return res.status(409).json({
-      error: 'own_approval_not_sufficient',
-      approval_request: serializeApprovalRequest(existing)
+      error: approval.error,
+      approval_request: serializeApprovalRequest(approval.approvalRequest)
     });
   }
 
-  if (existing) {
-    store.approveRequest(existing.id, req.user.user_hash);
-  }
-
-  if (approvalRequest.approvals.length < config.highImpactApprovalCount) {
-    return res.status(202).json({ approval_request: serializeApprovalRequest(approvalRequest) });
+  if (!approval.approved) {
+    return res.status(202).json({ approval_request: serializeApprovalRequest(approval.approvalRequest) });
   }
 
   const space = store.createSpace(payload.name, payload.allowed_domains);
-  store.resolveApprovalRequest(approvalRequest.id, { space_id: space.id });
+  store.resolveApprovalRequest(approval.approvalRequest.id, { space_id: space.id });
   return res.status(201).json({
     space: serializeSpace(space),
-    approval_request: serializeApprovalRequest(approvalRequest)
+    approval_request: serializeApprovalRequest(approval.approvalRequest)
   });
 });
 
@@ -808,22 +806,16 @@ app.post('/admin/roles', requireAuth, requireSystemAdmin, (req, res) => {
     return res.status(409).json({ error: 'role_not_granted', user: serializeRoleTarget(target) });
   }
 
-  const existing = store.findOpenApprovalRequest('change_role', payload);
-  const approvalRequest = existing || store.createApprovalRequest('change_role', payload, req.user.user_hash);
-
-  if (existing && existing.created_by === req.user.user_hash && !existing.approvals.some((hash) => hash !== req.user.user_hash)) {
+  const approval = approvalService.requestOrApprove('change_role', payload, req.user.user_hash);
+  if (!approval.ok) {
     return res.status(409).json({
-      error: 'own_approval_not_sufficient',
-      approval_request: serializeApprovalRequest(existing)
+      error: approval.error,
+      approval_request: serializeApprovalRequest(approval.approvalRequest)
     });
   }
 
-  if (existing) {
-    store.approveRequest(existing.id, req.user.user_hash);
-  }
-
-  if (approvalRequest.approvals.length < config.highImpactApprovalCount) {
-    return res.status(202).json({ approval_request: serializeApprovalRequest(approvalRequest) });
+  if (!approval.approved) {
+    return res.status(202).json({ approval_request: serializeApprovalRequest(approval.approvalRequest) });
   }
 
   const updatedUser = store.setUserRole(
@@ -833,11 +825,11 @@ app.post('/admin/roles', requireAuth, requireSystemAdmin, (req, res) => {
     payload.action === 'grant',
     roleChangeReason(payload)
   );
-  store.resolveApprovalRequest(approvalRequest.id, { user_hash: target.user_hash, role: payload.role, action: payload.action });
+  store.resolveApprovalRequest(approval.approvalRequest.id, { user_hash: target.user_hash, role: payload.role, action: payload.action });
 
   return res.status(201).json({
     user: serializeRoleTarget(updatedUser),
-    approval_request: serializeApprovalRequest(approvalRequest)
+    approval_request: serializeApprovalRequest(approval.approvalRequest)
   });
 });
 
