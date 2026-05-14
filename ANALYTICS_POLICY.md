@@ -118,3 +118,7 @@ Before enabling analytics for a real community:
 ## Product Rule
 
 If a metric could help an operator identify who posted, reported, voted, appealed, or logged in, UniAnon must not collect it.
+
+## Current Prototype
+
+The MVP exposes `GET /metrics/summary` for moderators. It returns local day-level aggregate buckets for account creation, posts, comments, reports, governance cases, appeals, and audit events. Activity buckets below 10 events are suppressed as `1-9`; the endpoint does not return user ids, emails, nullifiers, IP addresses, user agents, tokens, or content text.

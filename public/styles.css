@@ -386,6 +386,21 @@ h3 {
   overflow-wrap: anywhere;
 }
 
+.metrics-list {
+  display: grid;
+  gap: 6px;
+  margin: 14px 0;
+}
+
+.metric-row {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #ffffff;
+  padding: 8px;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
 .case-actions,
 .appeal-actions {
   display: flex;

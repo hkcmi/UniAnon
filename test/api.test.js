@@ -886,6 +886,21 @@ test('requires multi-party system admin approval for role changes', async () => 
   const secondRevokeResult = await secondRevoke.json();
   assert.equal(secondRevokeResult.user.roles.includes('moderator'), false);
   assert.equal(store.auditLog.some((event) => event.operation === 'role_revoked'), true);
+
+  const deniedMetrics = await fetch(`${baseUrl}/metrics/summary`, {
+    headers: { authorization: `Bearer ${target.sessionToken}` }
+  });
+  assert.equal(deniedMetrics.status, 403);
+
+  const metricsResponse = await fetch(`${baseUrl}/metrics/summary`, {
+    headers: { authorization: `Bearer ${moderator.sessionToken}` }
+  });
+  assert.equal(metricsResponse.status, 200);
+  const { metrics } = await metricsResponse.json();
+  assert.equal(metrics.min_activity_bucket_size, 10);
+  assert.equal(Array.isArray(metrics.buckets), true);
+  assert.equal(JSON.stringify(metrics).includes(target.user.user_hash), false);
+  assert.equal(JSON.stringify(metrics).includes('role-target@example.edu'), false);
 });
 
 test('allows moderators to ban users and read audit events', async () => {

@@ -7,6 +7,7 @@ const state = {
   appeals: [],
   approvals: [],
   adminUsers: [],
+  metrics: null,
   auditLog: [],
   publicAuditLog: [],
   activeSpaceId: 'public'
@@ -46,6 +47,7 @@ const elements = {
   roleActionSelect: document.querySelector('#roleActionSelect'),
   adminUserList: document.querySelector('#adminUserList'),
   approvalList: document.querySelector('#approvalList'),
+  metricsList: document.querySelector('#metricsList'),
   banForm: document.querySelector('#banForm'),
   banUserHashInput: document.querySelector('#banUserHashInput'),
   banReasonInput: document.querySelector('#banReasonInput'),
@@ -457,6 +459,42 @@ function renderAdminUsers() {
   }
 }
 
+function metricValue(metric) {
+  if (!metric) {
+    return '0';
+  }
+
+  return metric.suppressed ? metric.range : String(metric.count);
+}
+
+function renderMetrics() {
+  elements.metricsList.replaceChildren();
+
+  if (!canModerate()) {
+    return;
+  }
+
+  const heading = document.createElement('h3');
+  heading.textContent = 'Metrics';
+  elements.metricsList.append(heading);
+
+  const buckets = state.metrics?.buckets || [];
+  if (buckets.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'muted';
+    empty.textContent = 'No metrics yet.';
+    elements.metricsList.append(empty);
+    return;
+  }
+
+  for (const bucket of buckets.slice(0, 7)) {
+    const row = document.createElement('div');
+    row.className = 'metric-row';
+    row.textContent = `${bucket.date}: posts ${metricValue(bucket.posts_created)}, comments ${metricValue(bucket.comments_created)}, reports ${metricValue(bucket.reports_created)}, cases ${metricValue(bucket.cases_opened)}`;
+    elements.metricsList.append(row);
+  }
+}
+
 function renderAuditLog() {
   elements.auditLogList.replaceChildren();
 
@@ -620,6 +658,22 @@ async function loadAuditLog() {
   renderAuditLog();
 }
 
+async function loadMetrics() {
+  if (!canModerate()) {
+    state.metrics = null;
+    renderMetrics();
+    return;
+  }
+
+  try {
+    const payload = await api('/metrics/summary');
+    state.metrics = payload.metrics;
+  } catch {
+    state.metrics = null;
+  }
+  renderMetrics();
+}
+
 async function loadPublicAuditLog() {
   try {
     const payload = await api('/audit-log');
@@ -638,6 +692,7 @@ async function refreshAll() {
   await loadAppeals();
   await loadApprovals();
   await loadAdminUsers();
+  await loadMetrics();
   await loadAuditLog();
   await loadPublicAuditLog();
 }
@@ -823,6 +878,7 @@ elements.roleForm.addEventListener('submit', async (event) => {
     await loadMe();
     await loadAdminUsers();
     await loadApprovals();
+    await loadMetrics();
     await loadAuditLog();
     await loadPublicAuditLog();
   } catch (error) {
@@ -858,6 +914,7 @@ elements.logoutButton.addEventListener('click', async () => {
   state.appeals = [];
   state.approvals = [];
   state.adminUsers = [];
+  state.metrics = null;
   localStorage.removeItem('unianon:token');
   await refreshAll();
 });
@@ -866,6 +923,7 @@ elements.refreshButton.addEventListener('click', refreshAll);
 elements.auditRefreshButton.addEventListener('click', async () => {
   await loadApprovals();
   await loadAdminUsers();
+  await loadMetrics();
   await loadAuditLog();
   await loadPublicAuditLog();
 });

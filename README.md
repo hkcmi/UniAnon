@@ -335,6 +335,10 @@ Protected users also require `ADMIN_PROTECTION_APPROVAL_WEIGHT` violation vote w
 
 List users for operator role management. Requires a `system_admin` session. Responses include user hashes, nicknames, domain groups, trust levels, roles, and ban status. They do not include emails, nullifiers, tokens, or auth-provider subjects.
 
+### `GET /metrics/summary`
+
+Read local aggregate operational metrics. Requires a moderator session. The prototype returns day buckets for account creation, posts, comments, reports, governance cases, appeals, and audit events. Activity buckets below 10 events are suppressed as `1-9`; metrics do not include user ids, emails, nullifiers, IP addresses, user agents, tokens, or content text.
+
 ### `POST /admin/roles`
 
 Request or approve a role change. Requires a `system_admin` session. Role changes are high-impact operations and require `HIGH_IMPACT_APPROVAL_COUNT` distinct system admin approvals before they apply.

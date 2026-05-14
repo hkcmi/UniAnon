@@ -228,6 +228,83 @@ function countSystemAdmins() {
   }).length;
 }
 
+function dayKey(value) {
+  return new Date(value).toISOString().slice(0, 10);
+}
+
+function incrementMetricBucket(buckets, createdAt, name) {
+  const key = dayKey(createdAt);
+  const bucket = buckets.get(key) || {
+    date: key,
+    accounts_created: 0,
+    posts_created: 0,
+    comments_created: 0,
+    reports_created: 0,
+    cases_opened: 0,
+    appeals_opened: 0,
+    audit_events: 0
+  };
+  bucket[name] += 1;
+  buckets.set(key, bucket);
+}
+
+function privacyCount(value) {
+  if (value === 0 || value >= 10) {
+    return { count: value, suppressed: false };
+  }
+
+  return { count: null, suppressed: true, range: '1-9' };
+}
+
+function serializeMetricsBucket(bucket) {
+  return {
+    date: bucket.date,
+    accounts_created: privacyCount(bucket.accounts_created),
+    posts_created: privacyCount(bucket.posts_created),
+    comments_created: privacyCount(bucket.comments_created),
+    reports_created: privacyCount(bucket.reports_created),
+    cases_opened: privacyCount(bucket.cases_opened),
+    appeals_opened: privacyCount(bucket.appeals_opened),
+    audit_events: privacyCount(bucket.audit_events)
+  };
+}
+
+function buildMetricsSummary() {
+  const buckets = new Map();
+
+  for (const user of store.users.values()) {
+    incrementMetricBucket(buckets, user.created_at, 'accounts_created');
+  }
+  for (const post of store.posts.values()) {
+    incrementMetricBucket(buckets, post.created_at, 'posts_created');
+  }
+  for (const comment of store.comments.values()) {
+    incrementMetricBucket(buckets, comment.created_at, 'comments_created');
+  }
+  for (const report of store.reports.values()) {
+    incrementMetricBucket(buckets, report.created_at, 'reports_created');
+  }
+  for (const moderationCase of store.moderationCases.values()) {
+    incrementMetricBucket(buckets, moderationCase.created_at, 'cases_opened');
+  }
+  for (const appealCase of store.appealCases.values()) {
+    incrementMetricBucket(buckets, appealCase.created_at, 'appeals_opened');
+  }
+  for (const event of store.auditLog) {
+    incrementMetricBucket(buckets, event.created_at, 'audit_events');
+  }
+
+  return {
+    generated_at: new Date().toISOString(),
+    retention_days: 90,
+    min_activity_bucket_size: 10,
+    buckets: [...buckets.values()]
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 90)
+      .map(serializeMetricsBucket)
+  };
+}
+
 async function enforceRateLimit(req, res, limitName, subject) {
   const result = await rateLimiter.consume(limitName, subject);
   res.set('X-RateLimit-Limit', String(result.max));
@@ -977,6 +1054,10 @@ app.get('/admin/users', requireAuth, requireSystemAdmin, (req, res) => {
     .map(serializeRoleTarget);
 
   res.json({ users });
+});
+
+app.get('/metrics/summary', requireAuth, requireModerator, (req, res) => {
+  res.json({ metrics: buildMetricsSummary() });
 });
 
 app.post('/admin/roles', requireAuth, requireSystemAdmin, (req, res) => {
