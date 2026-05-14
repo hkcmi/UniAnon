@@ -282,18 +282,6 @@ function voteWeight(user) {
   return Math.min(user.trust_level + 1, 4);
 }
 
-function reportWeight(user) {
-  if (user.banned || !user.nickname) {
-    return 0;
-  }
-
-  if (user.trust_level <= 0) {
-    return 1;
-  }
-
-  return Math.min(3, user.trust_level + 1);
-}
-
 function reportThresholdForTarget(accusedHash) {
   const accused = store.users.get(accusedHash);
   return hasProtectedRole(accused) ? config.adminProtectionApprovalWeight : config.reportWeightThreshold;
@@ -773,25 +761,22 @@ app.post('/reports', requireAuth, requireNickname, async (req, res) => {
     return;
   }
 
-  const { report, duplicate } = store.createReport(
-    req.user.user_hash,
+  const result = reportService.submitReport({
+    actor: req.user,
     targetType,
     targetId,
     reason,
-    reportWeight(req.user)
-  );
-
-  if (duplicate) {
-    return res.status(409).json({ error: 'duplicate_report', report_id: report.id });
+    accusedHash: target.accusedHash
+  });
+  if (!result.ok) {
+    return res.status(result.status).json({ error: result.error, report_id: result.report.id });
   }
 
-  const reportSummary = reportService.openCaseIfThresholdReached(targetType, targetId, target.accusedHash);
-
   return res.status(201).json({
-    report_id: report.id,
-    report_weight: reportSummary.reportWeight,
-    report_threshold: reportSummary.reportThreshold,
-    case: reportSummary.moderationCase ? governanceViews.serializeCase(reportSummary.moderationCase) : null
+    report_id: result.report.id,
+    report_weight: result.reportSummary.reportWeight,
+    report_threshold: result.reportSummary.reportThreshold,
+    case: result.reportSummary.moderationCase ? governanceViews.serializeCase(result.reportSummary.moderationCase) : null
   });
 });
 

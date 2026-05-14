@@ -1,6 +1,18 @@
 export function createReportService(store, options = {}) {
   const thresholdForAccused = options.thresholdForAccused || (() => Infinity);
 
+  function reportWeight(user) {
+    if (user.banned || !user.nickname) {
+      return 0;
+    }
+
+    if (user.trust_level <= 0) {
+      return 1;
+    }
+
+    return Math.min(3, user.trust_level + 1);
+  }
+
   function reportsForTarget(targetType, targetId) {
     return [...store.reports.values()].filter((candidate) => {
       return candidate.target_type === targetType && candidate.target_id === targetId;
@@ -38,7 +50,25 @@ export function createReportService(store, options = {}) {
 
   return {
     reportsForTarget,
+    reportWeight,
     summarizeTargetReports,
-    openCaseIfThresholdReached
+    openCaseIfThresholdReached,
+
+    submitReport({ actor, targetType, targetId, reason, accusedHash }) {
+      const { report, duplicate } = store.createReport(
+        actor.user_hash,
+        targetType,
+        targetId,
+        reason,
+        reportWeight(actor)
+      );
+
+      if (duplicate) {
+        return { ok: false, status: 409, error: 'duplicate_report', report };
+      }
+
+      const reportSummary = openCaseIfThresholdReached(targetType, targetId, accusedHash);
+      return { ok: true, report, reportSummary };
+    }
   };
 }
