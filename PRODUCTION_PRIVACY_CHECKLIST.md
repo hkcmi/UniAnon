@@ -111,6 +111,16 @@ PRAGMA table_info(auth_events);
 - [ ] Moderator/admin audit log access is limited to protected roles.
 - [ ] Public audit log is enabled and reviewed for overexposure.
 
+## Analytics And Telemetry
+
+- [ ] [ANALYTICS_POLICY.md](ANALYTICS_POLICY.md) has been reviewed.
+- [ ] No third-party analytics script, tracking pixel, cross-site cookie, or browser fingerprinting is enabled.
+- [ ] Any metrics are aggregate, low-cardinality, and stored locally unless a lower-privacy tradeoff is explicitly accepted.
+- [ ] Metrics do not include plaintext email, email digests, raw user hashes, raw nullifiers, auth-provider subjects, tokens, request bodies, content ids, or content text.
+- [ ] Analytics buckets suppress low-count activity where the count could identify a user or small group.
+- [ ] Analytics retention is no longer than 90 days unless a shorter incident-specific window is documented.
+- [ ] Error reporting tools scrub authorization headers, cookies, tokens, OIDC codes, ID tokens, membership assertions, request bodies, and sensitive query strings.
+
 ## Sessions And Tokens
 
 - [ ] Sessions are transmitted only over HTTPS.

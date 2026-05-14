@@ -350,6 +350,8 @@ See [IDENTITY_RESEARCH.md](IDENTITY_RESEARCH.md) for OIDC, SAML, and anonymous-c
 
 See [PRODUCTION_PRIVACY_CHECKLIST.md](PRODUCTION_PRIVACY_CHECKLIST.md) before running a real community or privacy-sensitive pilot.
 
+See [ANALYTICS_POLICY.md](ANALYTICS_POLICY.md) before adding metrics, telemetry, error reporting, or product analytics.
+
 See [BACKUP_RESTORE.md](BACKUP_RESTORE.md) for SQLite backup, restore, and restore-drill procedures.
 
 See [INCIDENT_RESPONSE.md](INCIDENT_RESPONSE.md) for incident response and secret rotation procedures.
