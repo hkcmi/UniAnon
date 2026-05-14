@@ -336,6 +336,7 @@ First week checks:
 - Review moderator audit log.
 - Confirm no plaintext email appears in database spot checks.
 - Confirm users understand appeals.
+- For OIDC deployments, confirm the identity provider is still releasing only the approved minimal domain-membership claims.
 - Tune thresholds only after reviewing real usage.
 - Re-review [ANALYTICS_POLICY.md](ANALYTICS_POLICY.md) before enabling any new metric, dashboard, export, third-party analytics service, or error reporting sink.
 
