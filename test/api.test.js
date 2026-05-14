@@ -511,6 +511,20 @@ test('opens a moderation case from weighted reports and resolves by jury vote', 
   assert.equal(reportResult.report_weight, 3);
   assert.equal(reportResult.report_threshold, 3);
 
+  const deniedCaseDetail = await fetch(`${baseUrl}/governance/cases/${reportResult.case.id}`, {
+    headers: { authorization: `Bearer ${accused.sessionToken}` }
+  });
+  assert.equal(deniedCaseDetail.status, 403);
+
+  const caseDetail = await fetch(`${baseUrl}/governance/cases/${reportResult.case.id}`, {
+    headers: { authorization: `Bearer ${juror.sessionToken}` }
+  });
+  assert.equal(caseDetail.status, 200);
+  const caseDetailResult = await caseDetail.json();
+  assert.equal(caseDetailResult.case.id, reportResult.case.id);
+  assert.equal(caseDetailResult.case.target.content_excerpt, 'Content that should be reviewed.');
+  assert.equal(Object.hasOwn(caseDetailResult.case.accused, 'email'), false);
+
   const reporterVoteResponse = await fetch(`${baseUrl}/governance/cases/${reportResult.case.id}/votes`, {
     method: 'POST',
     headers: {

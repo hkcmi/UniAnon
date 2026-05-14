@@ -261,6 +261,10 @@ List moderation cases. Requires a trusted user with `trust_level >= 2`.
 
 Case responses include target summaries, accused user metadata, report evidence, jury assignments, vote summaries, and resolution state for evidence review. They do not include emails, raw membership nullifiers, or auth-provider identifiers.
 
+### `GET /governance/cases/:caseId`
+
+Read one moderation case with the same redacted evidence shape as the case list. Requires a trusted user with `trust_level >= 2`.
+
 ### `POST /governance/cases/:caseId/votes`
 
 Submit a jury vote. Requires a trusted user with `trust_level >= 2`.

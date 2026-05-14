@@ -1183,6 +1183,15 @@ app.get('/governance/cases', requireAuth, requireTrustedJuror, (req, res) => {
   res.json({ cases });
 });
 
+app.get('/governance/cases/:caseId', requireAuth, requireTrustedJuror, (req, res) => {
+  const moderationCase = store.moderationCases.get(req.params.caseId);
+  if (!moderationCase) {
+    return res.status(404).json({ error: 'case_not_found' });
+  }
+
+  return res.json({ case: serializeCase(moderationCase) });
+});
+
 app.post('/governance/cases/:caseId/votes', requireAuth, requireTrustedJuror, async (req, res) => {
   const decision = req.body.decision;
   const action = req.body.action || 'hide_content';
