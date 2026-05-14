@@ -122,6 +122,8 @@ NODE_ENV=production npm run readiness:production
 
 The readiness command checks production config, auth mode, Redis configuration, required privacy/runbook documents, and SQLite migration state. It does not call external providers or send email.
 
+If readiness fails, use the triage notes in [DEPLOYMENT.md](DEPLOYMENT.md#production-readiness-command).
+
 Bootstrap the first system admin after that user has logged in and set a nickname:
 
 ```bash

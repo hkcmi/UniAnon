@@ -178,15 +178,16 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 - [x] Add operator reminder to review analytics policy before launch.
 - [x] Add explicit OIDC-only login UI state.
 - [x] Add disabled-email API documentation.
+- [x] Add README link from readiness command to deployment triage notes.
 
 ## Suggested Next Sprint
 
 Recommended next tasks:
 
-1. Add README link from readiness command to deployment triage notes.
-2. Add launch record field for identity provider privacy owner.
-3. Add OIDC callback web handoff note.
-4. Add health endpoint auth-mode test to CI summary docs.
+1. Add launch record field for identity provider privacy owner.
+2. Add OIDC callback web handoff note.
+3. Add health endpoint auth-mode test to CI summary docs.
+4. Add production note for disabled magic-link login.
 
 Suggested implementation order:
 
