@@ -162,6 +162,14 @@ docker compose run --rm app npm run admin:bootstrap -- --nickname first_admin_ni
 docker compose restart app
 ```
 
+Run readiness checks against the Docker volume and Compose environment:
+
+```bash
+docker compose run --rm \
+  -e NODE_ENV=production \
+  app npm run readiness:production
+```
+
 See [DEPLOYMENT.md](DEPLOYMENT.md) for the full local deployment guide.
 
 ## API Sketch

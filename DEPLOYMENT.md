@@ -112,6 +112,14 @@ For a configuration-only dry run before the production database exists:
 READINESS_SKIP_DB=true NODE_ENV=production npm run readiness:production
 ```
 
+For Docker Compose deployments, run readiness inside the app service so it reads the mounted SQLite volume and Compose environment:
+
+```bash
+docker compose run --rm \
+  -e NODE_ENV=production \
+  app npm run readiness:production
+```
+
 ## Reverse Proxy And TLS
 
 Production deployments should terminate TLS at a reverse proxy such as Caddy, Nginx, Traefik, or a managed load balancer. The Node app should not be directly exposed to the public internet.
