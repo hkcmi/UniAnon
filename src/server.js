@@ -105,6 +105,33 @@ function consumeOidcState(state) {
   return record;
 }
 
+function wantsHtml(req) {
+  return String(req.get('accept') || '').includes('text/html');
+}
+
+function safeJsonForHtml(value) {
+  return JSON.stringify(value).replaceAll('<', '\\u003c');
+}
+
+function renderOidcCallbackHandoff(payload) {
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>UniAnon OIDC Sign-In</title>
+  </head>
+  <body>
+    <p>Completing sign-in...</p>
+    <script>
+      const payload = ${safeJsonForHtml(payload)};
+      localStorage.setItem('unianon:token', payload.session_token);
+      window.location.replace('/');
+    </script>
+  </body>
+</html>`;
+}
+
 app.use((req, res, next) => {
   const originalJson = res.json.bind(res);
   res.json = (body) => {
@@ -993,13 +1020,19 @@ app.get('/auth/oidc/callback', async (req, res) => {
   }
   const sessionToken = store.createSession(user.user_hash);
 
-  return res.json({
+  const payload = {
     session_token: sessionToken,
     membership_assertion: membershipAssertion,
     expires_in: Math.floor(config.sessionTtlMs / 1000),
     user: publicUser(user),
     nickname_required: !user.nickname
-  });
+  };
+
+  if (wantsHtml(req)) {
+    return res.type('html').send(renderOidcCallbackHandoff(payload));
+  }
+
+  return res.json(payload);
 });
 
 app.get('/me', requireAuth, (req, res) => {

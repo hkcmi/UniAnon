@@ -184,15 +184,17 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 - [x] Add health endpoint auth-mode test to CI summary docs.
 - [x] Add production note for disabled magic-link login.
 - [x] Add first-week review item for IdP claim minimization.
+- [x] Implement OIDC callback browser handoff page.
+- [x] Add OIDC callback browser handoff tests.
 
 ## Suggested Next Sprint
 
 Recommended next tasks:
 
-1. Implement OIDC callback browser handoff page.
-2. Add OIDC callback browser handoff tests.
-3. Add OIDC-only launch checklist command coverage.
-4. Add IdP claim-minimization example to launch guide.
+1. Add OIDC-only launch checklist command coverage.
+2. Add IdP claim-minimization example to launch guide.
+3. Add OIDC handoff page styling.
+4. Add OIDC handoff failure page.
 
 Suggested implementation order:
 

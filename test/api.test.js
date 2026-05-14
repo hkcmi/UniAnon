@@ -281,7 +281,7 @@ test('completes OIDC callback with domain claim and no stored email', async () =
     }
 
     if (String(url) === 'https://idp.example.edu/token') {
-      assert.equal(options.body.get('code'), 'oidc-code');
+      assert.match(options.body.get('code'), /^oidc-code/);
       const nowSeconds = Math.floor(Date.now() / 1000);
       return {
         ok: true,
@@ -331,6 +331,21 @@ test('completes OIDC callback with domain claim and no stored email', async () =
     assert.equal(body.user.domain_group, 'example.edu');
     assert.equal(body.user.user_hash.includes('opaque-idp-subject'), false);
     assert.equal(store.users.get(body.user.user_hash).email, undefined);
+
+    const htmlStart = await originalFetch(`${baseUrl}/auth/oidc/start`);
+    assert.equal(htmlStart.status, 200);
+    const htmlStartBody = await htmlStart.json();
+    nonce = htmlStartBody.nonce;
+    const htmlCallback = await originalFetch(
+      `${baseUrl}/auth/oidc/callback?state=${htmlStartBody.state}&code=oidc-code-html`,
+      { headers: { accept: 'text/html' } }
+    );
+    assert.equal(htmlCallback.status, 200);
+    assert.match(htmlCallback.headers.get('content-type'), /text\/html/);
+    const html = await htmlCallback.text();
+    assert.match(html, /localStorage\.setItem\('unianon:token'/);
+    assert.equal(html.includes("window.location.replace('/');"), true);
+    assert.doesNotMatch(html, /opaque-idp-subject/);
   } finally {
     Object.assign(config.oidc, originalOidc);
     globalThis.fetch = originalFetch;
