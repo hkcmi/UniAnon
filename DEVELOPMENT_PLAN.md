@@ -225,6 +225,7 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 - [x] Extract role-management validation and read models into a role service.
 - [x] Extract space listing and creation into a space service.
 - [x] Move approval request read/resolve operations into the approval service.
+- [x] Extract nickname validation and profile updates into a profile service.
 
 ## Automation Backlog
 

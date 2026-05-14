@@ -33,6 +33,7 @@ import { createReportService } from './report-service.js';
 import { createRoleService, normalizeRoleChange } from './role-service.js';
 import { createServices } from './services.js';
 import { createSpaceService, normalizeSpaceRequest } from './space-service.js';
+import { createProfileService, validateNickname } from './profile-service.js';
 
 const services = createServices();
 export const { store, rateLimiter, mailer, oidcStateStore, sessionService } = services;
@@ -57,6 +58,7 @@ export const approvalService = createApprovalService(store, {
 });
 export const roleService = createRoleService(store);
 export const spaceService = createSpaceService(store);
+export const profileService = createProfileService(store);
 export const app = express();
 
 if (config.trustProxy) {
@@ -331,40 +333,6 @@ function validateContent(content) {
 
   const nonWhitespace = trimmed.replace(/\s/g, '');
   if (nonWhitespace.length < 1) {
-    return null;
-  }
-
-  return trimmed;
-}
-
-function validateNickname(nickname) {
-  if (typeof nickname !== 'string') {
-    return null;
-  }
-
-  const trimmed = nickname.trim();
-  if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]{2,31}$/.test(trimmed)) {
-    return null;
-  }
-
-  const canonical = trimmed.toLowerCase();
-  const reserved = new Set([
-    'admin',
-    'administrator',
-    'appeal_jury',
-    'deleted',
-    'jury',
-    'moderator',
-    'system',
-    'system_admin',
-    'unianon'
-  ]);
-
-  if (reserved.has(canonical)) {
-    return null;
-  }
-
-  if (canonical.includes('http') || canonical.includes('www') || canonical.includes('dotcom')) {
     return null;
   }
 
@@ -703,12 +671,12 @@ app.post('/users/nickname', requireAuth, (req, res) => {
     return res.status(400).json({ error: 'invalid_nickname' });
   }
 
-  const ok = store.setNickname(req.user.user_hash, nickname);
-  if (!ok) {
-    return res.status(409).json({ error: 'nickname_unavailable_or_already_set' });
+  const result = profileService.setNickname(req.user, nickname);
+  if (!result.ok) {
+    return res.status(result.status).json({ error: result.error });
   }
 
-  return res.status(201).json({ user: publicUser(req.user) });
+  return res.status(201).json({ user: result.user });
 });
 
 app.post('/posts', requireAuth, requireNickname, async (req, res) => {
