@@ -137,6 +137,8 @@ PRAGMA table_info(auth_events);
 ## Rate Limiting And Abuse Controls
 
 - [ ] `REDIS_URL` is configured for any multi-process or Docker deployment.
+- [ ] `npm run readiness:production` reports `[PASS] Redis` for any real pilot or production deployment.
+- [ ] Any `[WARN] Redis` readiness result is accepted only for a documented single-process local trial.
 - [ ] Magic-link email and IP limits are tuned for the community size.
 - [ ] Posting, commenting, report, and jury-vote rate limits are tuned.
 - [ ] New-user limits are reviewed before launch.

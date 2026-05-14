@@ -76,6 +76,7 @@ Complete these items before starting production:
 - Configure `TRUST_PROXY` only for a trusted reverse proxy.
 - Confirm `EMAIL_DELIVERY` is not `dev`.
 - Confirm production startup rejects unsafe defaults.
+- Run readiness and confirm Redis is `[PASS]` for any real pilot or production deployment.
 
 Generate secrets:
 
@@ -88,6 +89,7 @@ Run:
 ```bash
 npm test
 docker compose config
+NODE_ENV=production npm run readiness:production
 ```
 
 ## Step 4: Launch With Demo Data Disabled

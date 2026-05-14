@@ -206,6 +206,7 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 - [x] Add reverse-proxy cache note for auth routes.
 - [x] Add OIDC browser flow automation backlog item.
 - [x] Add OIDC state replay test coverage.
+- [x] Add Redis readiness deployment checklist item.
 
 ## Automation Backlog
 
@@ -215,9 +216,8 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 
 Recommended next tasks:
 
-1. Add Redis readiness deployment checklist item.
-2. Add reverse-proxy no-cache header example.
-3. Add automated fake-OIDC browser smoke test.
+1. Add reverse-proxy no-cache header example.
+2. Add automated fake-OIDC browser smoke test.
 
 Suggested implementation order:
 
