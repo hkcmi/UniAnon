@@ -311,21 +311,6 @@ async function enforceRateLimit(req, res, limitName, subject) {
   return false;
 }
 
-function serializeApprovalRequest(request) {
-  return {
-    id: request.id,
-    operation: request.operation,
-    payload: request.payload,
-    status: request.status,
-    approvals_count: request.approvals.length,
-    required_approvals: config.highImpactApprovalCount,
-    created_by: request.created_by,
-    created_at: request.created_at,
-    resolved_at: request.resolved_at,
-    result: request.result
-  };
-}
-
 function validateContent(content) {
   if (typeof content !== 'string') {
     return null;
@@ -645,28 +630,23 @@ app.post('/spaces', requireAuth, requireModerator, (req, res) => {
   if (!approval.ok) {
     return res.status(409).json({
       error: approval.error,
-      approval_request: serializeApprovalRequest(approval.approvalRequest)
+      approval_request: approvalService.serializeApprovalRequest(approval.approvalRequest)
     });
   }
 
   if (!approval.approved) {
-    return res.status(202).json({ approval_request: serializeApprovalRequest(approval.approvalRequest) });
+    return res.status(202).json({ approval_request: approvalService.serializeApprovalRequest(approval.approvalRequest) });
   }
 
   const space = spaceService.createSpace(payload);
-  store.resolveApprovalRequest(approval.approvalRequest.id, { space_id: space.id });
   return res.status(201).json({
     space,
-    approval_request: serializeApprovalRequest(approval.approvalRequest)
+    approval_request: approvalService.resolveApprovalRequest(approval.approvalRequest.id, { space_id: space.id })
   });
 });
 
 app.get('/approvals', requireAuth, requireModerator, (req, res) => {
-  const approvals = [...store.approvalRequests.values()]
-    .filter((request) => req.user.roles.includes('system_admin') || request.operation !== 'change_role')
-    .sort((a, b) => b.created_at.localeCompare(a.created_at))
-    .map(serializeApprovalRequest);
-  res.json({ approvals });
+  res.json({ approvals: approvalService.listApprovalRequests(req.user) });
 });
 
 app.get('/admin/users', requireAuth, requireSystemAdmin, (req, res) => {
@@ -698,20 +678,22 @@ app.post('/admin/roles', requireAuth, requireSystemAdmin, (req, res) => {
   if (!approval.ok) {
     return res.status(409).json({
       error: approval.error,
-      approval_request: serializeApprovalRequest(approval.approvalRequest)
+      approval_request: approvalService.serializeApprovalRequest(approval.approvalRequest)
     });
   }
 
   if (!approval.approved) {
-    return res.status(202).json({ approval_request: serializeApprovalRequest(approval.approvalRequest) });
+    return res.status(202).json({ approval_request: approvalService.serializeApprovalRequest(approval.approvalRequest) });
   }
 
   const updatedUser = roleService.applyRoleChange({ actor: req.user, target, payload });
-  store.resolveApprovalRequest(approval.approvalRequest.id, { user_hash: target.user_hash, role: payload.role, action: payload.action });
 
   return res.status(201).json({
     user: updatedUser,
-    approval_request: serializeApprovalRequest(approval.approvalRequest)
+    approval_request: approvalService.resolveApprovalRequest(
+      approval.approvalRequest.id,
+      { user_hash: target.user_hash, role: payload.role, action: payload.action }
+    )
   });
 });
 
