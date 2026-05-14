@@ -341,6 +341,14 @@ test('completes OIDC callback with domain claim and no stored email', async () =
     assert.equal(body.user.user_hash.includes('opaque-idp-subject'), false);
     assert.equal(store.users.get(body.user.user_hash).email, undefined);
 
+    const replayedCallback = await originalFetch(
+      `${baseUrl}/auth/oidc/callback?state=${startBody.state}&code=oidc-code-replay`
+    );
+    assert.equal(replayedCallback.status, 400);
+    const replayedBody = await replayedCallback.json();
+    assert.equal(replayedBody.error, 'oidc_invalid_callback');
+    assert.match(replayedBody.message, /could not be verified/);
+
     const htmlStart = await originalFetch(`${baseUrl}/auth/oidc/start`);
     assert.equal(htmlStart.status, 200);
     const htmlStartBody = await htmlStart.json();
