@@ -98,6 +98,25 @@ test('exchanges valid membership assertions without echoing the assertion', () =
   assert.equal(Object.hasOwn(result.payload, 'membership_assertion'), false);
 });
 
+test('authenticates membership actors for appeal flows without creating sessions', () => {
+  const service = createAuthService({
+    store: fakeStore(),
+    sessionService: fakeSessionService(),
+    sessionTtlMs: 60_000
+  });
+  const assertion = createMembershipAssertion({
+    subjectHash: 'appeal-subject',
+    domainGroup: 'example.edu',
+    nullifier: 'appeal-nullifier'
+  });
+
+  const user = service.authenticateMembershipActor(assertion);
+
+  assert.equal(user.user_hash, 'appeal-subject');
+  assert.equal(user.domain_group, 'example.edu');
+  assert.equal(service.authenticateMembershipActor('bad-assertion'), null);
+});
+
 test('rejects invalid magic tokens and invalid membership assertions', () => {
   const service = createAuthService({
     store: fakeStore(),

@@ -18,7 +18,6 @@ import {
   normalizeEmail,
   publicUser
 } from './identity.js';
-import { verifyMembershipAssertion } from './membership-assertion.js';
 import { buildMetricsSummary } from './metrics-service.js';
 import { createModerationActionService } from './moderation-action-service.js';
 import { createModerationTargetService } from './moderation-target-service.js';
@@ -345,12 +344,7 @@ function authenticateAppealActor(req) {
     return sessionUser;
   }
 
-  const assertion = verifyMembershipAssertion(req.body.membership_assertion);
-  if (!assertion) {
-    return null;
-  }
-
-  return store.upsertUser(assertion.sub, assertion.domain_group, assertion.nullifier);
+  return authService.authenticateMembershipActor(req.body.membership_assertion);
 }
 
 app.get('/health', (req, res) => {

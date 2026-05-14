@@ -79,10 +79,20 @@ export function createAuthService({ store, sessionService, sessionTtlMs }) {
     });
   }
 
+  function authenticateMembershipActor(assertionValue) {
+    const assertion = verifyMembershipAssertion(assertionValue);
+    if (!assertion) {
+      return null;
+    }
+
+    return store.upsertUser(assertion.sub, assertion.domain_group, assertion.nullifier);
+  }
+
   return {
     createSessionPayload,
     loginWithMembership,
     verifyMagicToken,
-    exchangeMembershipAssertion
+    exchangeMembershipAssertion,
+    authenticateMembershipActor
   };
 }

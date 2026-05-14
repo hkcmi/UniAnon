@@ -229,6 +229,7 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 - [x] Extract direct moderator ban safeguards into a moderation action service.
 - [x] Move report creation and duplicate handling into the report service.
 - [x] Extract governance resolution side effects into a governance resolution service.
+- [x] Move appeal membership-assertion actor authentication into the auth service.
 
 ## Automation Backlog
 
