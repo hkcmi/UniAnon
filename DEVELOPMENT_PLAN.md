@@ -173,15 +173,16 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 - [x] Add CI failure triage notes for production smoke checks.
 - [x] Add launch-guide note for metrics retention review.
 - [x] Add Docker Compose OIDC env-file example for higher-privacy deployments.
+- [x] Add governance drill notes for appeal evidence review.
 
 ## Suggested Next Sprint
 
 Recommended next tasks:
 
-1. Add governance drill notes for appeal evidence review.
-2. Add readiness failure triage notes for production configuration.
-3. Add operator reminder to review analytics policy before launch.
-4. Add explicit OIDC-only login UI state.
+1. Add readiness failure triage notes for production configuration.
+2. Add operator reminder to review analytics policy before launch.
+3. Add explicit OIDC-only login UI state.
+4. Add disabled-email API documentation.
 
 Suggested implementation order:
 

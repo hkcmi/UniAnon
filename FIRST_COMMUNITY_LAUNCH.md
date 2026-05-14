@@ -224,6 +224,14 @@ Detail-route checks:
 - A `404 case_not_found` or `404 appeal_not_found` response means the id is invalid or the case is no longer available.
 - Voting has an extra assignment check for moderation cases; a trusted user can read a case detail route but may still receive `juror_not_assigned` when voting.
 
+Appeal evidence review:
+
+- Confirm the appeal detail view shows the appellant nickname, target summary, vote summary, and resolution without email, nullifier, session, or auth-provider fields.
+- For a banned-user appeal, confirm approval restores access and dismissal leaves the ban in place.
+- For a hidden-content appeal, confirm approval restores the post or comment and dismissal keeps it hidden.
+- Confirm the appellant cannot vote on their own appeal.
+- Confirm the public audit log records the appeal decision with redacted actor and target references.
+
 ## Step 10: Run Privacy Checks
 
 Complete:
