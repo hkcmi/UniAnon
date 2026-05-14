@@ -343,6 +343,8 @@ test('completes OIDC callback with domain claim and no stored email', async () =
     assert.equal(htmlCallback.status, 200);
     assert.match(htmlCallback.headers.get('content-type'), /text\/html/);
     const html = await htmlCallback.text();
+    assert.match(html, /<link rel="stylesheet" href="\/styles\.css">/);
+    assert.match(html, /OIDC verified/);
     assert.match(html, /localStorage\.setItem\('unianon:token'/);
     assert.equal(html.includes("window.location.replace('/');"), true);
     assert.doesNotMatch(html, /opaque-idp-subject/);

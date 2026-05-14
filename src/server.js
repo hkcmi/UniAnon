@@ -120,9 +120,24 @@ function renderOidcCallbackHandoff(payload) {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>UniAnon OIDC Sign-In</title>
+    <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
-    <p>Completing sign-in...</p>
+    <header class="topbar">
+      <div>
+        <h1>UniAnon</h1>
+        <p>Completing sign-in</p>
+      </div>
+    </header>
+    <main class="shell">
+      <section class="panel auth-panel">
+        <div class="panel-head">
+          <h2>Access</h2>
+          <span class="badge">OIDC verified</span>
+        </div>
+        <p class="status">Redirecting...</p>
+      </section>
+    </main>
     <script>
       const payload = ${safeJsonForHtml(payload)};
       localStorage.setItem('unianon:token', payload.session_token);
