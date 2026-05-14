@@ -122,3 +122,17 @@ If a metric could help an operator identify who posted, reported, voted, appeale
 ## Current Prototype
 
 The MVP exposes `GET /metrics/summary` for moderators. It returns local day-level aggregate buckets for account creation, posts, comments, reports, governance cases, appeals, and audit events from the last 90 days. Activity buckets below 10 events are suppressed as `1-9`; the endpoint does not return user ids, emails, nullifiers, IP addresses, user agents, tokens, or content text.
+
+Example suppressed metric:
+
+```json
+{
+  "posts_created": {
+    "count": null,
+    "suppressed": true,
+    "range": "1-9"
+  }
+}
+```
+
+The exact count is intentionally unavailable. Operators should use the range to understand activity exists, not to infer who acted.

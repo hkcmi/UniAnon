@@ -159,15 +159,16 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 - [x] Add bootstrap command tests for first-admin safety.
 - [x] Add moderator-facing appeal detail link in the local UI.
 - [x] Add CI readiness dry-run step with database fixture.
+- [x] Add aggregate metrics documentation examples.
 
 ## Suggested Next Sprint
 
 Recommended next tasks:
 
-1. Add aggregate metrics documentation examples.
-2. Add bootstrap command documentation for Docker deployments.
-3. Add governance case detail link in the local UI.
-4. Add CI bootstrap command dry-run step.
+1. Add bootstrap command documentation for Docker deployments.
+2. Add governance case detail link in the local UI.
+3. Add CI bootstrap command dry-run step.
+4. Add aggregate metrics UI suppressed-count hint.
 
 Suggested implementation order:
 

@@ -351,6 +351,26 @@ List users for operator role management. Requires a `system_admin` session. Resp
 
 Read local aggregate operational metrics. Requires a moderator session. The prototype returns day buckets for account creation, posts, comments, reports, governance cases, appeals, and audit events from the last 90 days. Activity buckets below 10 events are suppressed as `1-9`; metrics do not include user ids, emails, nullifiers, IP addresses, user agents, tokens, or content text.
 
+Example:
+
+```json
+{
+  "metrics": {
+    "retention_days": 90,
+    "min_activity_bucket_size": 10,
+    "buckets": [
+      {
+        "date": "2026-05-14",
+        "posts_created": { "count": null, "suppressed": true, "range": "1-9" },
+        "reports_created": { "count": 0, "suppressed": false }
+      }
+    ]
+  }
+}
+```
+
+Suppressed buckets mean UniAnon observed activity but hides the exact count to avoid singling out a user or small group.
+
 ### `POST /admin/roles`
 
 Request or approve a role change. Requires a `system_admin` session. Role changes are high-impact operations and require `HIGH_IMPACT_APPROVAL_COUNT` distinct system admin approvals before they apply.
