@@ -156,15 +156,16 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 - [x] Add appeal detail route for focused appeal review.
 - [x] Add readiness command tests for database migration inspection.
 - [x] Add local metrics retention pruning.
+- [x] Add bootstrap command tests for first-admin safety.
 
 ## Suggested Next Sprint
 
 Recommended next tasks:
 
-1. Add bootstrap command tests for first-admin safety.
-2. Add moderator-facing appeal detail link in the local UI.
-3. Add CI readiness dry-run step with database fixture.
-4. Add aggregate metrics documentation examples.
+1. Add moderator-facing appeal detail link in the local UI.
+2. Add CI readiness dry-run step with database fixture.
+3. Add aggregate metrics documentation examples.
+4. Add bootstrap command documentation for Docker deployments.
 
 Suggested implementation order:
 
