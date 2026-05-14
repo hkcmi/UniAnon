@@ -19,6 +19,8 @@ Do not launch until every item in this section is complete.
 - [ ] The production database is a fresh, access-controlled SQLite file or volume.
 - [ ] `schema_migrations` exists and shows all expected migrations.
 - [ ] `npm test` passes on the exact build being deployed.
+- [ ] `NODE_ENV=production npm run readiness:production` passes for the configured environment.
+- [ ] `npm run smoke:production` passes on the build being deployed.
 - [ ] GitHub CI is passing for the deployed commit.
 
 Check migration status:

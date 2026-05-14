@@ -112,6 +112,14 @@ npm run smoke:production
 
 The smoke test starts UniAnon once with production-safe temporary settings, checks `/health`, and exits. It does not request a magic link or send email.
 
+Run the production readiness checklist against a configured environment:
+
+```bash
+NODE_ENV=production npm run readiness:production
+```
+
+The readiness command checks production config, auth mode, Redis configuration, required privacy/runbook documents, and SQLite migration state. It does not call external providers or send email.
+
 ## Docker
 
 Build and run the local MVP:

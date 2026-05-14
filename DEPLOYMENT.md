@@ -96,6 +96,22 @@ npm run smoke:production
 
 The smoke test starts the app with `NODE_ENV=production`, temporary production-safe secrets, a temporary SQLite database, SMTP mode, and a local random port. It checks `/health` and shuts down. It does not call `/auth/request-link`, so it does not send email.
 
+## Production Readiness Command
+
+Against the environment you plan to deploy, run:
+
+```bash
+NODE_ENV=production npm run readiness:production
+```
+
+The command checks production configuration, auth mode, Redis configuration, required privacy/runbook documents, and SQLite migration state. It prints `PASS`, `WARN`, and `FAIL` lines and exits non-zero on failures. It does not call external OIDC or SMTP providers and does not send email.
+
+For a configuration-only dry run before the production database exists:
+
+```bash
+READINESS_SKIP_DB=true NODE_ENV=production npm run readiness:production
+```
+
 ## Reverse Proxy And TLS
 
 Production deployments should terminate TLS at a reverse proxy such as Caddy, Nginx, Traefik, or a managed load balancer. The Node app should not be directly exposed to the public internet.
