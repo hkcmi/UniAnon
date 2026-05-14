@@ -23,12 +23,14 @@ import {
 } from './oidc.js';
 import { createOidcStateStore } from './oidc-state-store.js';
 import { createRateLimiter } from './rate-limit.js';
+import { createSessionService } from './session-service.js';
 import { createStore } from './store.js';
 
 export const store = createStore();
 export const rateLimiter = createRateLimiter();
 export const mailer = createMailer();
 export const oidcStateStore = createOidcStateStore({ ttlMs: config.oidc.stateTtlMs });
+export const sessionService = createSessionService(store);
 export const app = express();
 
 if (config.trustProxy) {
@@ -193,9 +195,7 @@ app.use((req, res, next) => {
 });
 
 function requireAuth(req, res, next) {
-  const header = req.get('authorization') || '';
-  const token = header.startsWith('Bearer ') ? header.slice('Bearer '.length) : null;
-  const user = token ? store.findSession(token) : null;
+  const user = sessionService.findUserByAuthorization(req.get('authorization'));
 
   if (!user) {
     return res.status(401).json({ error: 'authentication_required' });
@@ -210,10 +210,7 @@ function requireAuth(req, res, next) {
 }
 
 function optionalAuth(req, res, next) {
-  const header = req.get('authorization') || '';
-  const token = header.startsWith('Bearer ') ? header.slice('Bearer '.length) : null;
-  const user = token ? store.findSession(token) : null;
-  req.user = user && !user.banned ? user : null;
+  req.user = sessionService.findActiveUserByAuthorization(req.get('authorization'));
   return next();
 }
 
@@ -760,9 +757,7 @@ function findAppealTarget(targetType, targetId) {
 }
 
 function findBearerUser(req) {
-  const header = req.get('authorization') || '';
-  const token = header.startsWith('Bearer ') ? header.slice('Bearer '.length) : null;
-  return token ? store.findSession(token) : null;
+  return sessionService.findUserByAuthorization(req.get('authorization'));
 }
 
 function authenticateAppealActor(req) {
@@ -953,7 +948,7 @@ app.post('/auth/verify', (req, res) => {
       user: publicUser(user)
     });
   }
-  const sessionToken = store.createSession(user.user_hash);
+  const sessionToken = sessionService.create(user.user_hash);
 
   return res.json({
     session_token: sessionToken,
@@ -974,7 +969,7 @@ app.post('/auth/exchange', (req, res) => {
   if (user.banned) {
     return res.status(403).json({ error: 'user_banned' });
   }
-  const sessionToken = store.createSession(user.user_hash);
+  const sessionToken = sessionService.create(user.user_hash);
 
   return res.json({
     session_token: sessionToken,
@@ -1064,7 +1059,7 @@ app.get('/auth/oidc/callback', async (req, res) => {
       user: publicUser(user)
     });
   }
-  const sessionToken = store.createSession(user.user_hash);
+  const sessionToken = sessionService.create(user.user_hash);
 
   const payload = {
     session_token: sessionToken,

@@ -209,6 +209,7 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 - [x] Add Redis readiness deployment checklist item.
 - [x] Add reverse-proxy no-cache header example.
 - [x] Extract OIDC state tracking into a service boundary.
+- [x] Extract session token lookup into a service boundary.
 
 ## Automation Backlog
 
