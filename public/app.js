@@ -307,6 +307,9 @@ function renderCases() {
       'No jury votes yet.',
       (vote) => `${vote.weight} weight ${vote.decision}${vote.action ? ` / ${vote.action}` : ''} from ${vote.actor_ref}`
     );
+    node.querySelector('.case-detail-button').addEventListener('click', async () => {
+      await loadCaseDetail(moderationCase.id);
+    });
 
     const actions = node.querySelector('.case-actions');
     actions.classList.toggle('hidden', moderationCase.status !== 'open');
@@ -595,6 +598,21 @@ async function loadCases() {
     state.cases = [];
   }
   renderCases();
+}
+
+async function loadCaseDetail(caseId) {
+  try {
+    const payload = await api(`/governance/cases/${caseId}`);
+    const index = state.cases.findIndex((moderationCase) => moderationCase.id === caseId);
+    if (index >= 0) {
+      state.cases[index] = payload.case;
+    } else {
+      state.cases.unshift(payload.case);
+    }
+    renderCases();
+  } catch (error) {
+    alert(error.payload?.message || error.payload?.error || error.message);
+  }
 }
 
 async function loadAppeals() {
