@@ -1,5 +1,6 @@
 import express from 'express';
 import helmet from 'helmet';
+import { createAuditService } from './audit-service.js';
 import { createApprovalService } from './approval-service.js';
 import { createAuthService } from './auth-service.js';
 import { assertProductionConfig, config } from './config.js';
@@ -40,6 +41,7 @@ export const authService = createAuthService({
 });
 export const contentService = createContentService(store);
 export const contentViews = createContentViewService(store);
+export const auditService = createAuditService(store);
 export const governanceCases = createGovernanceCaseService(store);
 export const governanceViews = createGovernanceViewService(store, {
   approvalThresholdForCase: (moderationCase) => caseApprovalThreshold(moderationCase)
@@ -374,18 +376,6 @@ function serializeRoleTarget(user) {
     trust_level: user.trust_level,
     roles: user.roles,
     banned: user.banned
-  };
-}
-
-function serializePublicAuditEvent(event) {
-  return {
-    id: event.id,
-    operation: event.operation,
-    actor_ref: publicAuditRef(event.actor_hash),
-    target_ref: publicAuditRef(event.target_hash || event.target_id),
-    target_type: event.target_type || null,
-    reason: event.reason,
-    created_at: event.created_at
   };
 }
 
@@ -1115,15 +1105,11 @@ app.post('/moderation/ban', requireAuth, requireModerator, (req, res) => {
 });
 
 app.get('/moderation/audit-log', requireAuth, requireModerator, (req, res) => {
-  res.json({ audit_log: store.auditLog });
+  res.json({ audit_log: auditService.listModeratorAuditEvents() });
 });
 
 app.get('/audit-log', (req, res) => {
-  const auditLog = store.auditLog
-    .map(serializePublicAuditEvent)
-    .sort((a, b) => b.created_at.localeCompare(a.created_at));
-
-  res.json({ audit_log: auditLog });
+  res.json({ audit_log: auditService.listPublicAuditEvents() });
 });
 
 app.use((req, res) => {

@@ -221,6 +221,7 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 - [x] Extract high-impact approval request flow into an approval service.
 - [x] Extract post/comment creation and visibility rules into a content service.
 - [x] Extract governance case and appeal CRUD/vote operations into a governance case service.
+- [x] Extract audit-log read models into an audit service.
 
 ## Automation Backlog
 
