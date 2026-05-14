@@ -36,13 +36,13 @@ Goal: make UniAnon usable on a local machine, not only through raw API calls.
 
 - [x] Add persistent database layer.
 - [x] Choose local database for MVP: SQLite.
-- [ ] Replace in-memory store with repository/service layer.
+- [x] Replace in-memory store with repository/service layer.
 - [x] Add database bootstrap migrations.
 - [x] Add `.env.example` for local configuration.
 - [x] Add seed script for local demo data.
 - [x] Add real dev login flow page.
 - [x] Add web frontend.
-- [ ] Add pages:
+- [x] Add pages:
   - [x] Login by email.
   - [x] Set nickname.
   - [x] Space list.
@@ -61,7 +61,7 @@ Goal: make UniAnon usable on a local machine, not only through raw API calls.
 Goal: make the MVP harder to abuse and closer to real community use.
 
 - [x] Add Redis support.
-- [ ] Add rate limits:
+- [x] Add rate limits:
   - [x] Magic link requests per email.
   - [x] Magic link requests per IP.
   - [x] Post creation per user.
@@ -241,8 +241,8 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 
 Recommended next tasks:
 
-1. Replace in-memory store globals with repository/service boundaries.
-2. Add SendGrid or provider-adapter option for lower-privacy email pilots.
+1. Add SendGrid or provider-adapter option for lower-privacy email pilots, with explicit privacy warnings.
+2. Split the monolithic store internals into smaller repository modules if the service layer grows further.
 
 Suggested implementation order:
 
