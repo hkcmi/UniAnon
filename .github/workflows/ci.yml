@@ -31,3 +31,22 @@ jobs:
 
       - name: Run production smoke test
         run: npm run smoke:production
+
+      - name: Run production readiness dry run
+        run: |
+          mkdir -p /tmp/unianon-ci
+          DATABASE_PATH=/tmp/unianon-ci/readiness.sqlite node --input-type=module -e "import { createStore } from './src/store.js'; const store = createStore(); store.close();"
+          NODE_ENV=production \
+          DATABASE_PATH=/tmp/unianon-ci/readiness.sqlite \
+          SERVER_SECRET=server-ci-readiness-secret-123456789012 \
+          AUTH_SUBJECT_SECRET=subject-ci-readiness-secret-12345678901 \
+          AUTH_LOG_SECRET=auth-log-ci-readiness-secret-123456789 \
+          NULLIFIER_SECRET=nullifier-ci-readiness-secret-123456789 \
+          MEMBERSHIP_ASSERTION_SECRET=assertion-ci-readiness-secret-123456789 \
+          ALLOWED_DOMAINS=example.edu \
+          APP_BASE_URL=https://unianon-ci.example.edu \
+          EMAIL_DELIVERY=smtp \
+          EMAIL_FROM="UniAnon <no-reply@unianon-ci.example.edu>" \
+          SMTP_HOST=smtp.invalid \
+          REDIS_URL=redis://localhost:6379 \
+          npm run readiness:production
