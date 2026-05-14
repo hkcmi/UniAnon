@@ -22,6 +22,10 @@ test('allows strong production configuration', () => {
   assert.deepEqual(validateProductionConfig(productionConfig(), 'production'), []);
 });
 
+test('allows production configuration with email login disabled', () => {
+  assert.deepEqual(validateProductionConfig(productionConfig({ emailDelivery: 'disabled' }), 'production'), []);
+});
+
 test('rejects unsafe production configuration', () => {
   const issues = validateProductionConfig(productionConfig({
     serverSecret: 'dev-only-change-me',
@@ -35,4 +39,10 @@ test('rejects unsafe production configuration', () => {
   assert.equal(issues.some((issue) => issue.includes('distinct')), true);
   assert.equal(issues.some((issue) => issue.includes('EMAIL_DELIVERY=dev')), true);
   assert.equal(issues.some((issue) => issue.includes('localhost')), true);
+});
+
+test('rejects unsupported production email delivery mode', () => {
+  const issues = validateProductionConfig(productionConfig({ emailDelivery: 'sendgrid' }), 'production');
+
+  assert.equal(issues.some((issue) => issue.includes('EMAIL_DELIVERY must be')), true);
 });

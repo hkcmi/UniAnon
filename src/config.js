@@ -108,6 +108,10 @@ export function validateProductionConfig(currentConfig = config, env = process.e
     issues.push('ALLOWED_DOMAINS must contain at least one domain.');
   }
 
+  if (!['dev', 'smtp', 'disabled'].includes(currentConfig.emailDelivery)) {
+    issues.push('EMAIL_DELIVERY must be dev, smtp, or disabled.');
+  }
+
   if (currentConfig.emailDelivery === 'dev') {
     issues.push('EMAIL_DELIVERY=dev is not allowed in production.');
   }

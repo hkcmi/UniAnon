@@ -113,6 +113,37 @@ docker compose --env-file .env.smtp-pilot run --rm app npm run readiness:product
 
 Record this as a lower-privacy deployment in the launch record. SMTP verifies domain ownership through email delivery, but the SMTP provider can see recipient addresses and delivery metadata.
 
+### Docker Compose OIDC Pilot
+
+For a higher-privacy pilot, prefer OIDC with minimal claims and disable email magic-link delivery:
+
+```bash
+cp .env.example .env.oidc
+```
+
+Set these values in `.env.oidc`:
+
+```bash
+NODE_ENV=production
+APP_BASE_URL=https://your-unianon.example
+EMAIL_DELIVERY=disabled
+OIDC_ISSUER=https://idp.example.edu
+OIDC_CLIENT_ID=your-client-id
+OIDC_CLIENT_SECRET=your-client-secret
+OIDC_REDIRECT_URI=https://your-unianon.example/auth/oidc/callback
+OIDC_SCOPES=openid
+OIDC_DOMAIN_CLAIMS=hd,domain,domain_group
+```
+
+Then start Docker Compose with that env file:
+
+```bash
+docker compose --env-file .env.oidc up -d
+docker compose --env-file .env.oidc run --rm app npm run readiness:production
+```
+
+In this mode, `/auth/request-link` returns `email_delivery_disabled` and does not create a magic token. The identity provider still sees that a user signed into UniAnon, so record the IdP trust boundary in the launch record.
+
 Before running a real community or privacy-sensitive pilot, complete [PRODUCTION_PRIVACY_CHECKLIST.md](PRODUCTION_PRIVACY_CHECKLIST.md).
 
 For first-time community setup, role assignment, governance drills, and launch records, see [FIRST_COMMUNITY_LAUNCH.md](FIRST_COMMUNITY_LAUNCH.md).

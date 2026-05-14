@@ -464,6 +464,29 @@ test('stores auth events with redacted email digests only', async () => {
   assert.equal(Object.hasOwn(event, 'email'), false);
 });
 
+test('rejects magic-link requests when email delivery is disabled', async () => {
+  const originalDelivery = config.emailDelivery;
+  config.emailDelivery = 'disabled';
+
+  try {
+    const response = await fetch(`${baseUrl}/auth/request-link`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'oidc-only@example.edu' })
+    });
+
+    assert.equal(response.status, 501);
+    const body = await response.json();
+    assert.equal(body.error, 'email_delivery_disabled');
+
+    const event = store.authEvents.find((candidate) => candidate.reason === 'email_delivery_disabled');
+    assert.notEqual(event, undefined);
+    assert.equal(event.email_digest, undefined);
+  } finally {
+    config.emailDelivery = originalDelivery;
+  }
+});
+
 test('opens a moderation case from weighted reports and resolves by jury vote', async () => {
   const accused = await signup('accused@example.edu', 'case_accused');
   const reporter = await signup('reporter@example.edu', 'case_reporter');

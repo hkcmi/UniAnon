@@ -52,6 +52,7 @@ const errorMessages = {
   duplicate_appeal: 'An open appeal already exists for this target.',
   duplicate_report: 'You have already reported this target.',
   duplicate_vote: 'You have already voted.',
+  email_delivery_disabled: 'Email magic-link login is disabled for this UniAnon instance.',
   invalid_action: 'Choose a supported moderation action.',
   invalid_content: 'Content must be non-empty, under 5000 characters, and free of control characters or repeated-character noise.',
   invalid_decision: 'Choose a supported decision.',
@@ -793,6 +794,15 @@ app.post('/auth/request-link', async (req, res) => {
       reason: 'invalid_email'
     });
     return res.status(400).json({ error: 'invalid_email' });
+  }
+
+  if (config.emailDelivery === 'disabled') {
+    store.logAuthEvent({
+      eventType: 'magic_link_requested',
+      success: false,
+      reason: 'email_delivery_disabled'
+    });
+    return res.status(501).json({ error: 'email_delivery_disabled' });
   }
 
   const domainGroup = getDomain(email);
