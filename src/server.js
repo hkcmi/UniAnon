@@ -117,11 +117,16 @@ function wantsHtml(req) {
   return String(req.get('accept') || '').includes('text/html');
 }
 
-function safeJsonForHtml(value) {
-  return JSON.stringify(value).replaceAll('<', '\\u003c');
+function escapeHtmlAttribute(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
 }
 
 function renderOidcCallbackHandoff(payload) {
+  const sessionToken = escapeHtmlAttribute(payload.session_token);
   return `<!doctype html>
 <html lang="en">
   <head>
@@ -144,13 +149,13 @@ function renderOidcCallbackHandoff(payload) {
           <span class="badge">OIDC verified</span>
         </div>
         <p class="status">Redirecting...</p>
+        <div id="oidcHandoff" data-session-token="${sessionToken}"></div>
+        <noscript>
+          <p class="status">JavaScript is required to complete browser sign-in.</p>
+        </noscript>
       </section>
     </main>
-    <script>
-      const payload = ${safeJsonForHtml(payload)};
-      localStorage.setItem('unianon:token', payload.session_token);
-      window.location.replace('/');
-    </script>
+    <script src="/oidc-handoff.js" defer></script>
   </body>
 </html>`;
 }
