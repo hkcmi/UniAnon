@@ -23,6 +23,7 @@ import {
   fetchJwks,
   verifyIdToken
 } from './oidc.js';
+import { createReportService } from './report-service.js';
 import { createServices } from './services.js';
 
 const services = createServices();
@@ -32,6 +33,9 @@ export const governanceViews = createGovernanceViewService(store, {
   approvalThresholdForCase: (moderationCase) => caseApprovalThreshold(moderationCase)
 });
 export const moderationTargets = createModerationTargetService(store);
+export const reportService = createReportService(store, {
+  thresholdForAccused: (accusedHash) => reportThresholdForTarget(accusedHash)
+});
 export const app = express();
 
 if (config.trustProxy) {
@@ -1024,27 +1028,13 @@ app.post('/reports', requireAuth, requireNickname, async (req, res) => {
     return res.status(409).json({ error: 'duplicate_report', report_id: report.id });
   }
 
-  let moderationCase = store.findOpenCase(targetType, targetId);
-  const targetReports = [...store.reports.values()].filter((candidate) => {
-    return candidate.target_type === targetType && candidate.target_id === targetId;
-  });
-  const totalReportWeight = targetReports.reduce((sum, candidate) => sum + candidate.weight, 0);
-  const reportThreshold = reportThresholdForTarget(target.accusedHash);
-
-  if (!moderationCase && totalReportWeight >= reportThreshold) {
-    moderationCase = store.createModerationCase(
-      targetType,
-      targetId,
-      target.accusedHash,
-      targetReports.map((candidate) => candidate.id)
-    );
-  }
+  const reportSummary = reportService.openCaseIfThresholdReached(targetType, targetId, target.accusedHash);
 
   return res.status(201).json({
     report_id: report.id,
-    report_weight: totalReportWeight,
-    report_threshold: reportThreshold,
-    case: moderationCase ? governanceViews.serializeCase(moderationCase) : null
+    report_weight: reportSummary.reportWeight,
+    report_threshold: reportSummary.reportThreshold,
+    case: reportSummary.moderationCase ? governanceViews.serializeCase(reportSummary.moderationCase) : null
   });
 });
 
