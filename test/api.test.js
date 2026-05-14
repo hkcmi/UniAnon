@@ -348,6 +348,16 @@ test('completes OIDC callback with domain claim and no stored email', async () =
     assert.match(html, /localStorage\.setItem\('unianon:token'/);
     assert.equal(html.includes("window.location.replace('/');"), true);
     assert.doesNotMatch(html, /opaque-idp-subject/);
+
+    const failedHtmlCallback = await originalFetch(
+      `${baseUrl}/auth/oidc/callback?state=missing-state&code=oidc-code-html`,
+      { headers: { accept: 'text/html' } }
+    );
+    assert.equal(failedHtmlCallback.status, 400);
+    assert.match(failedHtmlCallback.headers.get('content-type'), /text\/html/);
+    const failedHtml = await failedHtmlCallback.text();
+    assert.match(failedHtml, /Sign-in failed/);
+    assert.match(failedHtml, /OIDC sign-in could not be verified/);
   } finally {
     Object.assign(config.oidc, originalOidc);
     globalThis.fetch = originalFetch;

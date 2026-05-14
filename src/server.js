@@ -84,6 +84,14 @@ const errorMessages = {
 
 const oidcStates = new Map();
 
+function sendOidcCallbackError(req, res, status, error) {
+  const message = errorMessages[error] || errorMessages.oidc_invalid_callback;
+  if (wantsHtml(req)) {
+    return res.status(status).type('html').send(renderOidcCallbackFailure(message));
+  }
+  return res.status(status).json({ error });
+}
+
 function storeOidcState(state, nonce) {
   for (const [storedState, record] of oidcStates.entries()) {
     if (record.expires_at < Date.now()) {
@@ -143,6 +151,36 @@ function renderOidcCallbackHandoff(payload) {
       localStorage.setItem('unianon:token', payload.session_token);
       window.location.replace('/');
     </script>
+  </body>
+</html>`;
+}
+
+function renderOidcCallbackFailure(message) {
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>UniAnon OIDC Sign-In</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>UniAnon</h1>
+        <p>Sign-in failed</p>
+      </div>
+    </header>
+    <main class="shell">
+      <section class="panel auth-panel">
+        <div class="panel-head">
+          <h2>Access</h2>
+          <span class="badge">OIDC</span>
+        </div>
+        <p class="status">${message}</p>
+        <a href="/">Return to UniAnon</a>
+      </section>
+    </main>
   </body>
 </html>`;
 }
@@ -982,17 +1020,17 @@ app.get('/auth/oidc/start', async (req, res) => {
 
 app.get('/auth/oidc/callback', async (req, res) => {
   if (!config.oidc.issuer || !config.oidc.clientId || !config.oidc.redirectUri) {
-    return res.status(501).json({ error: 'oidc_not_configured' });
+    return sendOidcCallbackError(req, res, 501, 'oidc_not_configured');
   }
 
   const stateRecord = consumeOidcState(req.query.state);
   if (!stateRecord || typeof req.query.code !== 'string') {
-    return res.status(400).json({ error: 'oidc_invalid_callback' });
+    return sendOidcCallbackError(req, res, 400, 'oidc_invalid_callback');
   }
 
   const discovery = await fetchDiscovery(config.oidc.issuer);
   if (!discovery?.token_endpoint || !discovery?.jwks_uri) {
-    return res.status(502).json({ error: 'oidc_provider_unavailable' });
+    return sendOidcCallbackError(req, res, 502, 'oidc_provider_unavailable');
   }
 
   const tokens = await exchangeAuthorizationCode({
@@ -1003,7 +1041,7 @@ app.get('/auth/oidc/callback', async (req, res) => {
     redirectUri: config.oidc.redirectUri
   });
   if (!tokens) {
-    return res.status(400).json({ error: 'oidc_invalid_callback' });
+    return sendOidcCallbackError(req, res, 400, 'oidc_invalid_callback');
   }
 
   const jwks = await fetchJwks(discovery.jwks_uri);
@@ -1015,7 +1053,7 @@ app.get('/auth/oidc/callback', async (req, res) => {
   });
   const domainGroup = extractVerifiedDomainFromClaims(claims, config.allowedDomains, config.oidc.domainClaimNames);
   if (!claims || !domainGroup) {
-    return res.status(403).json({ error: domainGroup ? 'oidc_invalid_callback' : 'domain_not_allowed' });
+    return sendOidcCallbackError(req, res, 403, claims ? 'domain_not_allowed' : 'oidc_invalid_callback');
   }
 
   const subjectHash = createUserHash(`${claims.iss}:${claims.sub}`, config.authSubjectSecret);
