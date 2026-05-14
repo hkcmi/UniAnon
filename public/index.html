@@ -9,10 +9,16 @@
   <body>
     <header class="topbar">
       <div class="brand-block">
-        <h1>UniAnon</h1>
-        <p id="sessionLine">Not signed in</p>
+        <div class="brand-mark" aria-hidden="true">U</div>
+        <div>
+          <h1>UniAnon</h1>
+          <p id="sessionLine">Not signed in</p>
+        </div>
       </div>
-      <button id="logoutButton" class="secondary hidden" type="button">Log out</button>
+      <div class="topbar-actions">
+        <span class="environment-pill">Local preview</span>
+        <button id="logoutButton" class="secondary hidden" type="button">Log out</button>
+      </div>
     </header>
 
     <main class="shell">
@@ -23,24 +29,31 @@
             <h2>Sign in with your organization domain</h2>
           </div>
           <span class="badge">Domain verified</span>
+          <div class="trust-strip" aria-label="Privacy model">
+            <span>Stable pseudonym</span>
+            <span>No public email</span>
+            <span>Jury moderation</span>
+          </div>
         </div>
-        <form id="requestLinkForm" class="stack">
-          <label for="emailInput">Email</label>
-          <div class="inline-form">
-            <input id="emailInput" name="email" type="email" placeholder="person@example.edu" autocomplete="email" required>
-            <button type="submit">Send magic link</button>
-          </div>
-          <div id="demoAccountPicker" class="demo-account-picker hidden" aria-label="Demo accounts"></div>
-        </form>
-        <form id="verifyForm" class="stack hidden">
-          <label for="tokenInput">Magic token</label>
-          <div class="inline-form">
-            <input id="tokenInput" name="token" type="text" autocomplete="one-time-code" required>
-            <button type="submit">Continue</button>
-          </div>
-        </form>
-        <button id="oidcStartButton" class="secondary hidden" type="button">Sign in with OIDC</button>
-        <p id="authStatus" class="status"></p>
+        <div class="auth-card">
+          <form id="requestLinkForm" class="stack">
+            <label for="emailInput">Email</label>
+            <div class="inline-form">
+              <input id="emailInput" name="email" type="email" placeholder="person@example.edu" autocomplete="email" required>
+              <button type="submit">Send magic link</button>
+            </div>
+            <div id="demoAccountPicker" class="demo-account-picker hidden" aria-label="Demo accounts"></div>
+          </form>
+          <form id="verifyForm" class="stack hidden">
+            <label for="tokenInput">Magic token</label>
+            <div class="inline-form">
+              <input id="tokenInput" name="token" type="text" autocomplete="one-time-code" required>
+              <button type="submit">Continue</button>
+            </div>
+          </form>
+          <button id="oidcStartButton" class="secondary hidden" type="button">Sign in with OIDC</button>
+          <p id="authStatus" class="status"></p>
+        </div>
       </section>
 
       <section class="panel hidden" id="nicknamePanel">

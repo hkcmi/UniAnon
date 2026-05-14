@@ -232,6 +232,7 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 - [x] Move appeal membership-assertion actor authentication into the auth service.
 - [x] Extract magic-link request logging and token creation into an auth request service.
 - [x] Move protected-user report threshold lookup into the report service.
+- [x] Improve local web UI visual polish for login, workspace, feed, and governance panels.
 
 ## Automation Backlog
 
@@ -241,8 +242,10 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 
 Recommended next tasks:
 
-1. Split the monolithic store internals into smaller repository modules if the service layer grows further.
-2. Evaluate PostgreSQL only when deployment scale requires it.
+1. Add richer empty/loading/error states across the local web UI.
+2. Improve signed-in demo workflows so moderators, jurors, and ordinary members can be switched quickly.
+3. Split the monolithic store internals into smaller repository modules if the service layer grows further.
+4. Evaluate PostgreSQL only when deployment scale requires it.
 
 Suggested implementation order:
 
