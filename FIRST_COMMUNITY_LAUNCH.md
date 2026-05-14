@@ -315,6 +315,7 @@ Fill this in and keep it with deployment records:
 - Allowed domains:
 - System operator:
 - Community administrator:
+- Identity provider privacy owner:
 - Moderators:
 - Trusted launch jurors:
 - Backup location:
