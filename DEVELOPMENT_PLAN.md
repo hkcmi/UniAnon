@@ -228,6 +228,7 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 - [x] Extract nickname validation and profile updates into a profile service.
 - [x] Extract direct moderator ban safeguards into a moderation action service.
 - [x] Move report creation and duplicate handling into the report service.
+- [x] Extract governance resolution side effects into a governance resolution service.
 
 ## Automation Backlog
 

@@ -7,7 +7,7 @@ import { assertProductionConfig, config } from './config.js';
 import { createContentService } from './content-service.js';
 import { createContentViewService } from './content-view-service.js';
 import { createGovernanceCaseService } from './governance-case-service.js';
-import { decideAppealResolution, decideCaseResolution } from './governance-decision-service.js';
+import { createGovernanceResolutionService } from './governance-resolution-service.js';
 import { createGovernanceViewService } from './governance-view-service.js';
 import {
   createEmailDigest,
@@ -47,8 +47,12 @@ export const contentService = createContentService(store);
 export const contentViews = createContentViewService(store);
 export const auditService = createAuditService(store);
 export const governanceCases = createGovernanceCaseService(store);
+export const governanceResolutions = createGovernanceResolutionService(store, {
+  juryApprovalWeight: config.juryApprovalWeight,
+  adminProtectionApprovalWeight: config.adminProtectionApprovalWeight
+});
 export const governanceViews = createGovernanceViewService(store, {
-  approvalThresholdForCase: (moderationCase) => caseApprovalThreshold(moderationCase)
+  approvalThresholdForCase: (moderationCase) => governanceResolutions.caseApprovalThreshold(moderationCase)
 });
 export const moderationTargets = createModerationTargetService(store);
 export const reportService = createReportService(store, {
@@ -347,46 +351,6 @@ function authenticateAppealActor(req) {
   }
 
   return store.upsertUser(assertion.sub, assertion.domain_group, assertion.nullifier);
-}
-
-function caseApprovalThreshold(moderationCase) {
-  const accused = store.users.get(moderationCase.accused_hash);
-  return hasProtectedRole(accused) ? config.adminProtectionApprovalWeight : config.juryApprovalWeight;
-}
-
-function maybeResolveAppealCase(appealCase) {
-  const resolution = decideAppealResolution(appealCase, {
-    juryApprovalWeight: config.juryApprovalWeight
-  });
-  if (!resolution.resolved) {
-    return appealCase;
-  }
-
-  if (resolution.action === 'restore_access') {
-    store.unbanUser('appeal_jury', appealCase.target_id, resolution.reason);
-  } else if (resolution.action === 'restore_content') {
-    store.unhideTarget(appealCase.target_type, appealCase.target_id);
-  }
-
-  return store.resolveAppealCase(appealCase.id, resolution);
-}
-
-function maybeResolveCase(moderationCase) {
-  const resolution = decideCaseResolution(moderationCase, {
-    juryApprovalWeight: config.juryApprovalWeight,
-    approvalThreshold: caseApprovalThreshold(moderationCase)
-  });
-  if (!resolution.resolved) {
-    return moderationCase;
-  }
-
-  if (resolution.action === 'ban_user') {
-    store.banUser('jury', moderationCase.accused_hash, resolution.reason);
-  } else if (resolution.action === 'hide_content' && moderationCase.target_type !== 'user') {
-    store.hideTarget(moderationCase.target_type, moderationCase.target_id);
-  }
-
-  return store.resolveCase(moderationCase.id, resolution);
 }
 
 app.get('/health', (req, res) => {
@@ -824,7 +788,7 @@ app.post('/governance/cases/:caseId/votes', requireAuth, requireTrustedJuror, as
     return res.status(result.status).json({ error: result.error });
   }
 
-  const resolvedCase = maybeResolveCase(result.moderationCase);
+  const resolvedCase = governanceResolutions.maybeResolveCase(result.moderationCase);
   return res.status(201).json({ case: governanceViews.serializeCase(resolvedCase) });
 });
 
@@ -906,7 +870,7 @@ app.post('/appeals/:appealId/votes', requireAuth, requireTrustedJuror, async (re
     return res.status(result.status).json({ error: result.error });
   }
 
-  const resolvedAppeal = maybeResolveAppealCase(result.appealCase);
+  const resolvedAppeal = governanceResolutions.maybeResolveAppealCase(result.appealCase);
   return res.status(201).json({ appeal: governanceViews.serializeAppealCase(resolvedAppeal) });
 });
 
