@@ -8,7 +8,7 @@ import { canAccessSpace, createContentService } from './content-service.js';
 import { createContentViewService } from './content-view-service.js';
 import { createGovernanceCaseService } from './governance-case-service.js';
 import { decideAppealResolution, decideCaseResolution } from './governance-decision-service.js';
-import { createGovernanceViewService, publicAuditRef } from './governance-view-service.js';
+import { createGovernanceViewService } from './governance-view-service.js';
 import {
   createEmailDigest,
   createScopedNullifier,
@@ -30,6 +30,7 @@ import {
   verifyIdToken
 } from './oidc.js';
 import { createReportService } from './report-service.js';
+import { createRoleService, normalizeRoleChange } from './role-service.js';
 import { createServices } from './services.js';
 
 const services = createServices();
@@ -53,6 +54,7 @@ export const reportService = createReportService(store, {
 export const approvalService = createApprovalService(store, {
   requiredApprovals: config.highImpactApprovalCount
 });
+export const roleService = createRoleService(store);
 export const app = express();
 
 if (config.trustProxy) {
@@ -289,38 +291,6 @@ function reportThresholdForTarget(accusedHash) {
   return hasProtectedRole(accused) ? config.adminProtectionApprovalWeight : config.reportWeightThreshold;
 }
 
-function normalizeRoleChange(body) {
-  const targetHash = typeof body.user_hash === 'string' ? body.user_hash.trim() : '';
-  const role = typeof body.role === 'string' ? body.role.trim() : '';
-  const action = typeof body.action === 'string' ? body.action.trim() : '';
-
-  if (!['moderator', 'system_admin'].includes(role)) {
-    return { error: 'invalid_role' };
-  }
-
-  if (!['grant', 'revoke'].includes(action)) {
-    return { error: 'invalid_role_action' };
-  }
-
-  return {
-    payload: {
-      user_hash: targetHash,
-      role,
-      action
-    }
-  };
-}
-
-function roleChangeReason(payload) {
-  return `${payload.action} ${payload.role}`;
-}
-
-function countSystemAdmins() {
-  return [...store.users.values()].filter((user) => {
-    return !user.banned && user.roles.includes('system_admin');
-  }).length;
-}
-
 async function enforceRateLimit(req, res, limitName, subject) {
   const result = await rateLimiter.consume(limitName, subject);
   res.set('X-RateLimit-Limit', String(result.max));
@@ -360,22 +330,6 @@ function serializeApprovalRequest(request) {
     created_at: request.created_at,
     resolved_at: request.resolved_at,
     result: request.result
-  };
-}
-
-function serializeRoleTarget(user) {
-  if (!user) {
-    return null;
-  }
-
-  return {
-    user_hash: user.user_hash,
-    user_ref: publicAuditRef(user.user_hash),
-    nickname: user.nickname || '[unset]',
-    domain_group: user.domain_group,
-    trust_level: user.trust_level,
-    roles: user.roles,
-    banned: user.banned
   };
 }
 
@@ -748,11 +702,7 @@ app.get('/approvals', requireAuth, requireModerator, (req, res) => {
 });
 
 app.get('/admin/users', requireAuth, requireSystemAdmin, (req, res) => {
-  const users = [...store.users.values()]
-    .sort((a, b) => a.created_at.localeCompare(b.created_at))
-    .map(serializeRoleTarget);
-
-  res.json({ users });
+  res.json({ users: roleService.listRoleTargets() });
 });
 
 app.get('/metrics/summary', requireAuth, requireModerator, (req, res) => {
@@ -766,26 +716,14 @@ app.post('/admin/roles', requireAuth, requireSystemAdmin, (req, res) => {
   }
 
   const { payload } = normalized;
-  const target = store.users.get(payload.user_hash);
-  if (!target) {
-    return res.status(404).json({ error: 'target_not_found' });
-  }
-
-  if (target.user_hash === req.user.user_hash && payload.role === 'system_admin' && payload.action === 'revoke') {
-    return res.status(400).json({ error: 'cannot_revoke_own_system_admin' });
-  }
-
-  if (payload.role === 'system_admin' && payload.action === 'revoke' && countSystemAdmins() <= 1) {
-    return res.status(409).json({ error: 'cannot_remove_last_system_admin' });
-  }
-
-  const alreadyHasRole = target.roles.includes(payload.role);
-  if (payload.action === 'grant' && alreadyHasRole) {
-    return res.status(409).json({ error: 'role_already_granted', user: serializeRoleTarget(target) });
-  }
-
-  if (payload.action === 'revoke' && !alreadyHasRole) {
-    return res.status(409).json({ error: 'role_not_granted', user: serializeRoleTarget(target) });
+  const target = roleService.getUser(payload.user_hash);
+  const validation = roleService.validateRoleChange({ actor: req.user, target, payload });
+  if (!validation.ok) {
+    const body = { error: validation.error };
+    if (validation.user) {
+      body.user = validation.user;
+    }
+    return res.status(validation.status).json(body);
   }
 
   const approval = approvalService.requestOrApprove('change_role', payload, req.user.user_hash);
@@ -800,17 +738,11 @@ app.post('/admin/roles', requireAuth, requireSystemAdmin, (req, res) => {
     return res.status(202).json({ approval_request: serializeApprovalRequest(approval.approvalRequest) });
   }
 
-  const updatedUser = store.setUserRole(
-    req.user.user_hash,
-    target.user_hash,
-    payload.role,
-    payload.action === 'grant',
-    roleChangeReason(payload)
-  );
+  const updatedUser = roleService.applyRoleChange({ actor: req.user, target, payload });
   store.resolveApprovalRequest(approval.approvalRequest.id, { user_hash: target.user_hash, role: payload.role, action: payload.action });
 
   return res.status(201).json({
-    user: serializeRoleTarget(updatedUser),
+    user: updatedUser,
     approval_request: serializeApprovalRequest(approval.approvalRequest)
   });
 });
