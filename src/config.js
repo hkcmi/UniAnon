@@ -7,7 +7,7 @@ const defaultSecret = 'dev-only-change-me';
 export const config = {
   port: Number(process.env.PORT || 3000),
   trustProxy: process.env.TRUST_PROXY || '',
-  databasePath: process.env.DATABASE_PATH || (process.env.NODE_ENV === 'test' ? ':memory:' : 'data/unianon.sqlite'),
+  databasePath: process.env.DATABASE_PATH || (isTest ? ':memory:' : 'data/unianon.sqlite'),
   serverSecret: process.env.SERVER_SECRET || defaultSecret,
   authSubjectSecret: process.env.AUTH_SUBJECT_SECRET || process.env.SERVER_SECRET || defaultSecret,
   authLogSecret: process.env.AUTH_LOG_SECRET || process.env.SERVER_SECRET || defaultSecret,

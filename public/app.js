@@ -1018,6 +1018,33 @@ elements.auditRefreshButton.addEventListener('click', async () => {
   await loadPublicAuditLog();
 });
 
-refreshAll().catch((error) => {
-  console.error(error);
-});
+async function consumeTokenFromUrl() {
+  const token = new URLSearchParams(window.location.search).get('token');
+  if (!token) {
+    return false;
+  }
+
+  elements.tokenInput.value = token;
+  setStatus(elements.authStatus, 'Verifying magic link...');
+  try {
+    const payload = await api('/auth/verify', {
+      method: 'POST',
+      body: JSON.stringify({ token })
+    });
+    state.token = payload.session_token;
+    state.user = payload.user;
+    localStorage.setItem('unianon:token', state.token);
+    window.history.replaceState({}, '', window.location.pathname);
+    setStatus(elements.authStatus, '');
+    await refreshAll();
+  } catch (error) {
+    setStatus(elements.authStatus, error.payload?.message || error.payload?.error || error.message);
+  }
+  return true;
+}
+
+if (!(await consumeTokenFromUrl())) {
+  refreshAll().catch((error) => {
+    console.error(error);
+  });
+}

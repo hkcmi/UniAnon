@@ -11,7 +11,7 @@
     "readiness:production": "node scripts/readiness-production.js",
     "smoke:production": "node scripts/smoke-production.js",
     "smoke:oidc-browser": "NODE_ENV=test node scripts/smoke-oidc-browser.js",
-    "test": "NODE_ENV=test node --test"
+    "test": "NODE_ENV=test DATABASE_PATH=:memory: RATE_LIMIT_MAGIC_LINK_IP_MAX=1000 node --test"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
