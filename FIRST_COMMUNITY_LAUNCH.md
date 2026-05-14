@@ -116,6 +116,13 @@ For the first deployment only, after the first administrator has logged in and s
 DATABASE_PATH=data/unianon.sqlite npm run admin:bootstrap -- --nickname first_admin_nickname
 ```
 
+For Docker Compose deployments, run the command inside the app service so it uses the `unianon-data` volume:
+
+```bash
+docker compose run --rm app npm run admin:bootstrap -- --nickname first_admin_nickname
+docker compose restart app
+```
+
 The bootstrap command refuses to run once any active `system_admin` already exists. Use the in-app multi-party role-management workflow for every later role change.
 
 Role examples:

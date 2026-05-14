@@ -155,6 +155,13 @@ docker compose down
 
 SQLite data is stored in the `unianon-data` Docker volume. Docker Compose also starts Redis for rate limiting.
 
+Bootstrap the first system admin inside the Docker volume after that user has logged in:
+
+```bash
+docker compose run --rm app npm run admin:bootstrap -- --nickname first_admin_nickname
+docker compose restart app
+```
+
 See [DEPLOYMENT.md](DEPLOYMENT.md) for the full local deployment guide.
 
 ## API Sketch
