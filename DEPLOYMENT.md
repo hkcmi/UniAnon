@@ -82,6 +82,37 @@ Use `SMTP_SECURE=true` for providers that require implicit TLS, usually on port 
 
 SMTP providers necessarily see recipient email addresses. See [PRIVACY.md](PRIVACY.md) before choosing a delivery provider.
 
+### Docker Compose SMTP Pilot
+
+For a lower-privacy SMTP pilot, keep SMTP settings in a separate env file so operators do not confuse it with the highest-privacy OIDC target:
+
+```bash
+cp .env.example .env.smtp-pilot
+```
+
+Set these values in `.env.smtp-pilot`:
+
+```bash
+NODE_ENV=production
+APP_BASE_URL=https://your-unianon.example
+EMAIL_DELIVERY=smtp
+EMAIL_FROM=UniAnon <no-reply@your-unianon.example>
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-smtp-user
+SMTP_PASS=your-smtp-password
+```
+
+Then start Docker Compose with that env file:
+
+```bash
+docker compose --env-file .env.smtp-pilot up -d
+docker compose --env-file .env.smtp-pilot run --rm app npm run readiness:production
+```
+
+Record this as a lower-privacy deployment in the launch record. SMTP verifies domain ownership through email delivery, but the SMTP provider can see recipient addresses and delivery metadata.
+
 Before running a real community or privacy-sensitive pilot, complete [PRODUCTION_PRIVACY_CHECKLIST.md](PRODUCTION_PRIVACY_CHECKLIST.md).
 
 For first-time community setup, role assignment, governance drills, and launch records, see [FIRST_COMMUNITY_LAUNCH.md](FIRST_COMMUNITY_LAUNCH.md).
