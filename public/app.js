@@ -483,6 +483,10 @@ function renderMetrics() {
   const heading = document.createElement('h3');
   heading.textContent = 'Metrics';
   elements.metricsList.append(heading);
+  const note = document.createElement('p');
+  note.className = 'muted';
+  note.textContent = '1-9 means the exact count is suppressed.';
+  elements.metricsList.append(note);
 
   const buckets = state.metrics?.buckets || [];
   if (buckets.length === 0) {
