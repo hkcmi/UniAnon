@@ -216,6 +216,14 @@ Before inviting users, test the full governance path:
 
 Do not launch until this drill passes.
 
+Detail-route checks:
+
+- `GET /governance/cases/:caseId` and `GET /appeals/:appealId` require an authenticated user with `trust_level >= 2`.
+- Detail responses are still redacted; they are for evidence review, not identity discovery.
+- A `403 trusted_juror_required` response usually means the account is signed in but has not reached trusted-juror level.
+- A `404 case_not_found` or `404 appeal_not_found` response means the id is invalid or the case is no longer available.
+- Voting has an extra assignment check for moderation cases; a trusted user can read a case detail route but may still receive `juror_not_assigned` when voting.
+
 ## Step 10: Run Privacy Checks
 
 Complete:
