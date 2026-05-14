@@ -2,6 +2,7 @@ import express from 'express';
 import helmet from 'helmet';
 import { assertProductionConfig, config } from './config.js';
 import { createContentViewService } from './content-view-service.js';
+import { decideAppealResolution, decideCaseResolution } from './governance-decision-service.js';
 import { createGovernanceViewService, publicAuditRef } from './governance-view-service.js';
 import {
   createEmailDigest,
@@ -483,70 +484,38 @@ function caseApprovalThreshold(moderationCase) {
 }
 
 function maybeResolveAppealCase(appealCase) {
-  const approveWeight = appealCase.votes
-    .filter((vote) => vote.decision === 'approve')
-    .reduce((sum, vote) => sum + vote.weight, 0);
-  const dismissWeight = appealCase.votes
-    .filter((vote) => vote.decision === 'dismiss')
-    .reduce((sum, vote) => sum + vote.weight, 0);
-
-  if (dismissWeight >= config.juryApprovalWeight) {
-    return store.resolveAppealCase(appealCase.id, {
-      decision: 'dismiss',
-      action: 'none',
-      reason: 'appeal jury dismissed the appeal'
-    });
-  }
-
-  if (approveWeight < config.juryApprovalWeight) {
+  const resolution = decideAppealResolution(appealCase, {
+    juryApprovalWeight: config.juryApprovalWeight
+  });
+  if (!resolution.resolved) {
     return appealCase;
   }
 
-  if (appealCase.target_type === 'user') {
-    store.unbanUser('appeal_jury', appealCase.target_id, 'appeal approved restore access');
-  } else {
+  if (resolution.action === 'restore_access') {
+    store.unbanUser('appeal_jury', appealCase.target_id, resolution.reason);
+  } else if (resolution.action === 'restore_content') {
     store.unhideTarget(appealCase.target_type, appealCase.target_id);
   }
 
-  return store.resolveAppealCase(appealCase.id, {
-    decision: 'approve',
-    action: appealCase.target_type === 'user' ? 'restore_access' : 'restore_content',
-    reason: 'appeal jury approved the appeal'
-  });
+  return store.resolveAppealCase(appealCase.id, resolution);
 }
 
 function maybeResolveCase(moderationCase) {
-  const violationVotes = moderationCase.votes.filter((vote) => vote.decision === 'violation');
-  const dismissWeight = moderationCase.votes
-    .filter((vote) => vote.decision === 'dismiss')
-    .reduce((sum, vote) => sum + vote.weight, 0);
-  const violationWeight = violationVotes.reduce((sum, vote) => sum + vote.weight, 0);
-  const approvalThreshold = caseApprovalThreshold(moderationCase);
-
-  if (dismissWeight >= config.juryApprovalWeight) {
-    return store.resolveCase(moderationCase.id, {
-      decision: 'dismiss',
-      action: 'none',
-      reason: 'jury dismissed the case'
-    });
-  }
-
-  if (violationWeight < approvalThreshold) {
+  const resolution = decideCaseResolution(moderationCase, {
+    juryApprovalWeight: config.juryApprovalWeight,
+    approvalThreshold: caseApprovalThreshold(moderationCase)
+  });
+  if (!resolution.resolved) {
     return moderationCase;
   }
 
-  const preferredAction = violationVotes.at(-1)?.action || 'hide_content';
-  if (preferredAction === 'ban_user') {
-    store.banUser('jury', moderationCase.accused_hash, 'jury approved ban');
-  } else if (moderationCase.target_type !== 'user') {
+  if (resolution.action === 'ban_user') {
+    store.banUser('jury', moderationCase.accused_hash, resolution.reason);
+  } else if (resolution.action === 'hide_content' && moderationCase.target_type !== 'user') {
     store.hideTarget(moderationCase.target_type, moderationCase.target_id);
   }
 
-  return store.resolveCase(moderationCase.id, {
-    decision: 'violation',
-    action: preferredAction,
-    reason: `jury approved ${preferredAction}`
-  });
+  return store.resolveCase(moderationCase.id, resolution);
 }
 
 app.get('/health', (req, res) => {
