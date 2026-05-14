@@ -96,7 +96,7 @@ ADMIN_PROTECTION_APPROVAL_WEIGHT=8
 HIGH_IMPACT_APPROVAL_COUNT=2
 ```
 
-For local development, `/auth/request-link` returns the verification token in the response. Set `EMAIL_DELIVERY=smtp` to send magic links through SMTP instead.
+For local development, `/auth/request-link` returns the verification token in the response. Set `EMAIL_DELIVERY=smtp` to send magic links through SMTP instead. Set `EMAIL_DELIVERY=sendgrid` with `SENDGRID_API_KEY` for a SendGrid pilot; this is lower privacy because SendGrid sees recipient addresses.
 
 For OIDC-first deployments, set `EMAIL_DELIVERY=disabled` to turn off email magic-link login and avoid sending member addresses to an SMTP provider.
 

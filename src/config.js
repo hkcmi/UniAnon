@@ -31,6 +31,10 @@ export const config = {
     user: process.env.SMTP_USER || '',
     pass: process.env.SMTP_PASS || ''
   },
+  sendgrid: {
+    apiKey: process.env.SENDGRID_API_KEY || '',
+    apiUrl: process.env.SENDGRID_API_URL || 'https://api.sendgrid.com/v3/mail/send'
+  },
   oidc: {
     issuer: process.env.OIDC_ISSUER || '',
     clientId: process.env.OIDC_CLIENT_ID || '',
@@ -108,12 +112,16 @@ export function validateProductionConfig(currentConfig = config, env = process.e
     issues.push('ALLOWED_DOMAINS must contain at least one domain.');
   }
 
-  if (!['dev', 'smtp', 'disabled'].includes(currentConfig.emailDelivery)) {
-    issues.push('EMAIL_DELIVERY must be dev, smtp, or disabled.');
+  if (!['dev', 'smtp', 'sendgrid', 'disabled'].includes(currentConfig.emailDelivery)) {
+    issues.push('EMAIL_DELIVERY must be dev, smtp, sendgrid, or disabled.');
   }
 
   if (currentConfig.emailDelivery === 'dev') {
     issues.push('EMAIL_DELIVERY=dev is not allowed in production.');
+  }
+
+  if (currentConfig.emailDelivery === 'sendgrid' && !currentConfig.sendgrid?.apiKey) {
+    issues.push('EMAIL_DELIVERY=sendgrid requires SENDGRID_API_KEY.');
   }
 
   if (currentConfig.appBaseUrl.includes('localhost')) {

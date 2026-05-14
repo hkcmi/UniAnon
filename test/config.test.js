@@ -26,6 +26,16 @@ test('allows production configuration with email login disabled', () => {
   assert.deepEqual(validateProductionConfig(productionConfig({ emailDelivery: 'disabled' }), 'production'), []);
 });
 
+test('allows production SendGrid configuration with explicit API key', () => {
+  assert.deepEqual(validateProductionConfig(productionConfig({
+    emailDelivery: 'sendgrid',
+    sendgrid: {
+      apiKey: 'sendgrid-key',
+      apiUrl: 'https://api.sendgrid.com/v3/mail/send'
+    }
+  }), 'production'), []);
+});
+
 test('rejects unsafe production configuration', () => {
   const issues = validateProductionConfig(productionConfig({
     serverSecret: 'dev-only-change-me',
@@ -42,7 +52,16 @@ test('rejects unsafe production configuration', () => {
 });
 
 test('rejects unsupported production email delivery mode', () => {
-  const issues = validateProductionConfig(productionConfig({ emailDelivery: 'sendgrid' }), 'production');
+  const issues = validateProductionConfig(productionConfig({ emailDelivery: 'mailgun' }), 'production');
 
   assert.equal(issues.some((issue) => issue.includes('EMAIL_DELIVERY must be')), true);
+});
+
+test('rejects SendGrid production config without API key', () => {
+  const issues = validateProductionConfig(productionConfig({
+    emailDelivery: 'sendgrid',
+    sendgrid: { apiKey: '', apiUrl: 'https://api.sendgrid.com/v3/mail/send' }
+  }), 'production');
+
+  assert.equal(issues.some((issue) => issue.includes('SENDGRID_API_KEY')), true);
 });

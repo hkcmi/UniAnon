@@ -96,7 +96,7 @@ Goal: make governance more complete and closer to the project specification.
 Goal: replace dev-only magic token responses with real email delivery.
 
 - [x] Add SMTP provider support.
-- [ ] Add SendGrid or similar provider option.
+- [x] Add SendGrid or similar provider option.
 - [x] Add email templates.
 - [x] Stop returning magic tokens in SMTP mode.
 - [x] Add magic link expiration tests.

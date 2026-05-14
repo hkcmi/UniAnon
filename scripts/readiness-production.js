@@ -75,6 +75,22 @@ function checkAuthMode() {
 
     warn('SMTP privacy', 'SMTP providers necessarily see recipient addresses; highest privacy mode should use minimal-claims OIDC or future anonymous credentials.');
   }
+
+  if (config.emailDelivery === 'sendgrid') {
+    if (config.sendgrid.apiKey) {
+      pass('SendGrid', 'SENDGRID_API_KEY is configured.');
+    } else {
+      fail('SendGrid', 'EMAIL_DELIVERY=sendgrid requires SENDGRID_API_KEY.');
+    }
+
+    if (config.emailFrom && !config.emailFrom.includes('localhost')) {
+      pass('email sender', 'EMAIL_FROM does not use localhost.');
+    } else {
+      fail('email sender', 'EMAIL_FROM should use a production sender domain.');
+    }
+
+    warn('SendGrid privacy', 'SendGrid necessarily sees recipient addresses; highest privacy mode should use minimal-claims OIDC or future anonymous credentials.');
+  }
 }
 
 function checkRedis() {
