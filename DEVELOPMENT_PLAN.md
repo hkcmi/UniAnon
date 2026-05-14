@@ -241,8 +241,8 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 
 Recommended next tasks:
 
-1. Add SendGrid or provider-adapter option for lower-privacy email pilots, with explicit privacy warnings.
-2. Split the monolithic store internals into smaller repository modules if the service layer grows further.
+1. Split the monolithic store internals into smaller repository modules if the service layer grows further.
+2. Evaluate PostgreSQL only when deployment scale requires it.
 
 Suggested implementation order:
 
