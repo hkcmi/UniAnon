@@ -1,6 +1,7 @@
 import express from 'express';
 import helmet from 'helmet';
 import { assertProductionConfig, config } from './config.js';
+import { createContentViewService } from './content-view-service.js';
 import { createGovernanceViewService, publicAuditRef } from './governance-view-service.js';
 import {
   createEmailDigest,
@@ -25,6 +26,7 @@ import { createServices } from './services.js';
 
 const services = createServices();
 export const { store, rateLimiter, mailer, oidcStateStore, sessionService } = services;
+export const contentViews = createContentViewService(store);
 export const governanceViews = createGovernanceViewService(store, {
   approvalThresholdForCase: (moderationCase) => caseApprovalThreshold(moderationCase)
 });
@@ -312,31 +314,6 @@ async function enforceRateLimit(req, res, limitName, subject) {
     retry_after: result.retry_after
   });
   return false;
-}
-
-function serializePost(post) {
-  const user = store.users.get(post.user_hash);
-  const postComments = [...store.comments.values()]
-    .filter((comment) => comment.post_id === post.id && !comment.hidden)
-    .map((comment) => {
-      const commentUser = store.users.get(comment.user_hash);
-      return {
-        id: comment.id,
-        post_id: comment.post_id,
-        nickname: commentUser?.nickname || '[deleted]',
-        content: comment.content,
-        created_at: comment.created_at
-      };
-    });
-
-  return {
-    id: post.id,
-    space_id: post.space_id,
-    nickname: user?.nickname || '[deleted]',
-    content: post.content,
-    created_at: post.created_at,
-    comments: postComments
-  };
 }
 
 function serializeSpace(space) {
@@ -1005,7 +982,7 @@ app.post('/posts', requireAuth, requireNickname, async (req, res) => {
   }
 
   const post = store.createPost(req.user.user_hash, space.id, content);
-  return res.status(201).json({ post: serializePost(post) });
+  return res.status(201).json({ post: contentViews.serializePost(post) });
 });
 
 app.get('/posts', optionalAuth, (req, res) => {
@@ -1015,7 +992,7 @@ app.get('/posts', optionalAuth, (req, res) => {
     .filter((post) => !requestedSpaceId || post.space_id === requestedSpaceId)
     .filter((post) => canAccessSpace(req.user, store.spaces.get(post.space_id)))
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
-    .map(serializePost);
+    .map((post) => contentViews.serializePost(post));
 
   res.json({ posts: visiblePosts });
 });
