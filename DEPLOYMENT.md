@@ -235,6 +235,13 @@ Redis readiness warning:
 
 Missing Redis means rate-limit counters live only in the app process. That is acceptable for one-process local trials, but weak for Docker, restarts, or any deployment with more than one app process. For real pilots, set `REDIS_URL` and confirm readiness reports `[PASS] Redis`.
 
+Example single-process trial warning:
+
+```text
+[WARN] Redis: REDIS_URL is empty; use Redis for Docker, multi-process, or production deployments.
+Production readiness: 14 passed, 1 warnings, 0 failures.
+```
+
 ## Reverse Proxy And TLS
 
 Production deployments should terminate TLS at a reverse proxy such as Caddy, Nginx, Traefik, or a managed load balancer. The Node app should not be directly exposed to the public internet.

@@ -202,15 +202,16 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 - [x] Add OIDC static asset cache note.
 - [x] Add OIDC browser flow smoke test plan.
 - [x] Add OIDC state replay warning to docs.
+- [x] Add Redis readiness warning example output.
 
 ## Suggested Next Sprint
 
 Recommended next tasks:
 
-1. Add Redis readiness warning example output.
-2. Add reverse-proxy cache note for auth routes.
-3. Add OIDC browser flow automation backlog item.
-4. Add OIDC state replay test coverage.
+1. Add reverse-proxy cache note for auth routes.
+2. Add OIDC browser flow automation backlog item.
+3. Add OIDC state replay test coverage.
+4. Add Redis readiness deployment checklist item.
 
 Suggested implementation order:
 
