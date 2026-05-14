@@ -57,3 +57,16 @@ jobs:
           DATABASE_PATH=/tmp/unianon-ci/bootstrap.sqlite node --input-type=module -e "import { createStore } from './src/store.js'; const store = createStore(); const user = store.upsertUser('ci-bootstrap-user', 'example.edu', 'ci-bootstrap-nullifier'); store.setNickname(user.user_hash, 'ci_bootstrap_admin'); store.close();"
           DATABASE_PATH=/tmp/unianon-ci/bootstrap.sqlite npm run admin:bootstrap -- --nickname ci_bootstrap_admin
           DATABASE_PATH=/tmp/unianon-ci/bootstrap.sqlite node --input-type=module -e "import { createStore } from './src/store.js'; const store = createStore(); const user = store.users.get('ci-bootstrap-user'); if (!user.roles.includes('system_admin')) process.exit(1); store.close();"
+
+      - name: Write CI smoke summary
+        run: |
+          {
+            echo "## UniAnon CI Smoke Summary"
+            echo ""
+            echo "| Check | Status | Privacy note |"
+            echo "| --- | --- | --- |"
+            echo "| Test suite | Passed | Runs with NODE_ENV=test and local data only. |"
+            echo "| Production smoke | Passed | Uses smtp.invalid and does not send real email. |"
+            echo "| Production readiness dry run | Passed | Uses a temporary SQLite database and fake production secrets. |"
+            echo "| System admin bootstrap dry run | Passed | Uses a temporary fixture user and database. |"
+          } >> "$GITHUB_STEP_SUMMARY"
