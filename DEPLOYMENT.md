@@ -144,7 +144,7 @@ docker compose --env-file .env.oidc run --rm app npm run readiness:production
 
 In this mode, `/auth/request-link` returns `email_delivery_disabled` and does not create a magic token. The identity provider still sees that a user signed into UniAnon, so record the IdP trust boundary in the launch record.
 
-Browser requests to `/auth/oidc/callback` receive a small handoff page that stores the session token and redirects users back to the UniAnon UI. Browser callback failures receive a styled failure page with a return link. API clients that do not request HTML receive session JSON or JSON error codes.
+Browser requests to `/auth/oidc/callback` receive a small handoff page that stores the session token and redirects users back to the UniAnon UI. Browser callback failures receive a styled failure page with a return link. JavaScript must be enabled for the browser handoff to complete because the session token is stored in `localStorage`. API clients that do not request HTML receive session JSON or JSON error codes.
 
 Before running a real community or privacy-sensitive pilot, complete [PRODUCTION_PRIVACY_CHECKLIST.md](PRODUCTION_PRIVACY_CHECKLIST.md).
 
