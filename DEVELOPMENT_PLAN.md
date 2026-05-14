@@ -146,15 +146,16 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 - [x] Add production runbook for incident response and secret rotation.
 - [x] Add admin-facing setup guide for first community launch.
 - [x] Improve governance UX for case detail and evidence review.
+- [x] Add automated smoke test for production configuration.
 
 ## Suggested Next Sprint
 
 Recommended next tasks:
 
-1. Add automated smoke test for production configuration.
-2. Add privacy-preserving analytics policy.
-3. Add operator role-management workflow.
-4. Add governance case detail route for focused evidence review.
+1. Add privacy-preserving analytics policy.
+2. Add operator role-management workflow.
+3. Add governance case detail route for focused evidence review.
+4. Add operator-facing production readiness checklist command.
 
 Suggested implementation order:
 

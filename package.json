@@ -7,6 +7,7 @@
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
     "seed:demo": "node scripts/seed-demo.js",
+    "smoke:production": "node scripts/smoke-production.js",
     "test": "NODE_ENV=test node --test"
   },
   "dependencies": {

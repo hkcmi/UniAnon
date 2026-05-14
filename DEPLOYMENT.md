@@ -86,6 +86,16 @@ Before running a real community or privacy-sensitive pilot, complete [PRODUCTION
 
 For first-time community setup, role assignment, governance drills, and launch records, see [FIRST_COMMUNITY_LAUNCH.md](FIRST_COMMUNITY_LAUNCH.md).
 
+## Production Smoke Test
+
+Before deployment changes, run:
+
+```bash
+npm run smoke:production
+```
+
+The smoke test starts the app with `NODE_ENV=production`, temporary production-safe secrets, a temporary SQLite database, SMTP mode, and a local random port. It checks `/health` and shuts down. It does not call `/auth/request-link`, so it does not send email.
+
 ## Reverse Proxy And TLS
 
 Production deployments should terminate TLS at a reverse proxy such as Caddy, Nginx, Traefik, or a managed load balancer. The Node app should not be directly exposed to the public internet.

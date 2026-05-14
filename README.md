@@ -104,6 +104,14 @@ Production startup validates configuration and rejects unsafe defaults such as `
 
 Rate limits use an in-memory store by default. Set `REDIS_URL` to use Redis-backed counters.
 
+Run the production smoke test before deployment changes:
+
+```bash
+npm run smoke:production
+```
+
+The smoke test starts UniAnon once with production-safe temporary settings, checks `/health`, and exits. It does not request a magic link or send email.
+
 ## Docker
 
 Build and run the local MVP:
