@@ -70,6 +70,8 @@ For the strongest current privacy posture, prefer OIDC with minimal claims.
 - [ ] `OIDC_DOMAIN_CLAIMS` lists only trusted domain-membership claims.
 - [ ] The identity provider's audit/log policy has been reviewed.
 - [ ] IdP admins understand that releasing email claims weakens UniAnon privacy.
+- [ ] `EMAIL_DELIVERY=disabled` is set for OIDC-only deployments so magic-link login cannot send member addresses to an SMTP provider.
+- [ ] The local web UI shows the OIDC sign-in state and does not present email login as the primary path.
 
 OIDC fallback to `email` is supported only for providers that cannot issue a verified domain-only claim. Treat that fallback as lower privacy.
 
