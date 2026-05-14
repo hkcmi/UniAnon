@@ -231,6 +231,13 @@ Complete OIDC sign-in after the identity provider redirects back with `code` and
 
 Browser callback requests receive a small handoff page that stores the session token and redirects back to the UniAnon UI. Browser callback failures receive a styled failure page with a return link. JavaScript must be enabled for the browser handoff to complete because the session token is stored in `localStorage`. API clients that do not request HTML receive session JSON or JSON error codes.
 
+Common callback failures:
+
+- `400 oidc_invalid_callback`: missing, expired, reused, or tampered `state`, missing `code`, or invalid token response.
+- `501 oidc_not_configured`: OIDC environment variables are incomplete.
+- `502 oidc_provider_unavailable`: discovery, token, or JWKS metadata could not be loaded or validated.
+- `403 domain_not_allowed`: the verified domain claim is absent or outside `ALLOWED_DOMAINS`.
+
 OIDC identity does not use email to derive the UniAnon user hash. Domain membership should come from a configured verified domain claim such as `hd`, `domain`, or `domain_group`; verified email fallback is supported only for providers that cannot issue a domain-only claim.
 
 ### `POST /users/nickname`
