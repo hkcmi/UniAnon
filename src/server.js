@@ -152,6 +152,7 @@ function renderOidcCallbackHandoff(payload) {
         <div id="oidcHandoff" data-session-token="${sessionToken}"></div>
         <noscript>
           <p class="status">JavaScript is required to complete browser sign-in.</p>
+          <a href="/">Return to UniAnon</a>
         </noscript>
       </section>
     </main>

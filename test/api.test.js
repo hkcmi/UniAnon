@@ -348,6 +348,7 @@ test('completes OIDC callback with domain claim and no stored email', async () =
     assert.match(html, /id="oidcHandoff"/);
     assert.match(html, /data-session-token="/);
     assert.match(html, /src="\/oidc-handoff\.js"/);
+    assert.match(html, /<a href="\/">Return to UniAnon<\/a>/);
     assert.doesNotMatch(html, /membership_assertion/);
     assert.doesNotMatch(html, /opaque-idp-subject/);
 
