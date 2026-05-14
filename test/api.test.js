@@ -92,6 +92,15 @@ test('serves the local web UI', async () => {
   assert.match(html, /<title>UniAnon<\/title>/);
 });
 
+test('serves the OIDC handoff asset', async () => {
+  const response = await fetch(`${baseUrl}/oidc-handoff.js`);
+  const script = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('content-type'), /javascript/);
+  assert.match(script, /localStorage\.setItem\('unianon:token'/);
+});
+
 test('reports public auth options in health check', async () => {
   const originalDelivery = config.emailDelivery;
   const originalOidc = { ...config.oidc };

@@ -195,15 +195,16 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 - [x] Add OIDC handoff manual fallback link.
 - [x] Add OIDC callback failure-page docs.
 - [x] Add OIDC-only readiness example output.
+- [x] Add OIDC handoff asset test.
 
 ## Suggested Next Sprint
 
 Recommended next tasks:
 
-1. Add OIDC handoff asset test.
-2. Add OIDC handoff no-JS limitation note.
-3. Add OIDC failure page status-code examples.
-4. Add readiness warning note for missing Redis in single-process trials.
+1. Add OIDC handoff no-JS limitation note.
+2. Add OIDC failure page status-code examples.
+3. Add readiness warning note for missing Redis in single-process trials.
+4. Add OIDC static asset cache note.
 
 Suggested implementation order:
 
