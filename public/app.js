@@ -116,7 +116,7 @@ function updateAuthControls() {
   const emailLoginEnabled = state.authOptions.emailLoginEnabled;
   const oidcEnabled = state.authOptions.oidcEnabled;
   elements.requestLinkForm.classList.toggle('hidden', !emailLoginEnabled);
-  elements.verifyForm.classList.toggle('hidden', !emailLoginEnabled);
+  elements.verifyForm.classList.toggle('hidden', !emailLoginEnabled || !elements.tokenInput.value);
   elements.oidcStartButton.classList.toggle('hidden', !oidcEnabled);
 
   if (!state.user && !emailLoginEnabled) {
@@ -856,6 +856,7 @@ elements.requestLinkForm.addEventListener('submit', async (event) => {
     });
     if (payload.token) {
       elements.tokenInput.value = payload.token;
+      elements.verifyForm.classList.remove('hidden');
       setStatus(elements.authStatus, 'Token received.');
     } else {
       setStatus(elements.authStatus, 'Magic link sent.');
@@ -1025,6 +1026,7 @@ async function consumeTokenFromUrl() {
   }
 
   elements.tokenInput.value = token;
+  elements.verifyForm.classList.remove('hidden');
   setStatus(elements.authStatus, 'Verifying magic link...');
   try {
     const payload = await api('/auth/verify', {

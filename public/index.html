@@ -8,7 +8,7 @@
   </head>
   <body>
     <header class="topbar">
-      <div>
+      <div class="brand-block">
         <h1>UniAnon</h1>
         <p id="sessionLine">Not signed in</p>
       </div>
@@ -17,22 +17,25 @@
 
     <main class="shell">
       <section class="panel auth-panel" id="authPanel">
-        <div class="panel-head">
-          <h2>Access</h2>
+        <div class="auth-intro">
+          <div>
+            <div class="eyebrow">Private community access</div>
+            <h2>Sign in with your organization domain</h2>
+          </div>
           <span class="badge">Domain verified</span>
         </div>
         <form id="requestLinkForm" class="stack">
           <label for="emailInput">Email</label>
           <div class="inline-form">
             <input id="emailInput" name="email" type="email" placeholder="person@example.edu" autocomplete="email" required>
-            <button type="submit">Request link</button>
+            <button type="submit">Send magic link</button>
           </div>
         </form>
-        <form id="verifyForm" class="stack">
+        <form id="verifyForm" class="stack hidden">
           <label for="tokenInput">Magic token</label>
           <div class="inline-form">
             <input id="tokenInput" name="token" type="text" autocomplete="one-time-code" required>
-            <button type="submit">Verify</button>
+            <button type="submit">Continue</button>
           </div>
         </form>
         <button id="oidcStartButton" class="secondary hidden" type="button">Sign in with OIDC</button>
@@ -54,7 +57,7 @@
         <aside class="panel sidebar">
           <div class="panel-head">
             <h2>Spaces</h2>
-            <button id="refreshButton" class="icon-button" type="button" title="Refresh">Refresh</button>
+            <button id="refreshButton" class="icon-button" type="button" title="Refresh" aria-label="Refresh spaces">↻</button>
           </div>
           <div id="spaceList" class="space-list"></div>
         </aside>
@@ -87,7 +90,7 @@
             <div class="section-divider"></div>
             <div class="panel-head">
               <h2>Admin</h2>
-              <button id="auditRefreshButton" class="icon-button" type="button" title="Refresh admin data">Refresh</button>
+              <button id="auditRefreshButton" class="icon-button" type="button" title="Refresh admin data" aria-label="Refresh admin data">↻</button>
             </div>
             <form id="spaceForm" class="stack">
               <label for="spaceNameInput">Space name</label>
