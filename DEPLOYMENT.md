@@ -201,6 +201,15 @@ For OIDC-only deployments with `EMAIL_DELIVERY=disabled`, a healthy readiness su
 
 SMTP privacy warnings are expected only when `EMAIL_DELIVERY=smtp`.
 
+Example OIDC-only readiness lines:
+
+```text
+[PASS] OIDC: issuer, client id, and redirect URI are configured.
+[PASS] OIDC scopes: minimal-claims scopes are configured.
+[PASS] database migrations: 1 migrations recorded; latest is 1.
+Production readiness: 14 passed, 1 warnings, 0 failures.
+```
+
 Readiness triage:
 
 - `FAIL NODE_ENV`: run the command with `NODE_ENV=production`; do not treat development output as a launch check.

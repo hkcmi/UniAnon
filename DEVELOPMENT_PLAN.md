@@ -194,15 +194,16 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 - [x] Add OIDC handoff CSP-compatible no-inline-script option.
 - [x] Add OIDC handoff manual fallback link.
 - [x] Add OIDC callback failure-page docs.
+- [x] Add OIDC-only readiness example output.
 
 ## Suggested Next Sprint
 
 Recommended next tasks:
 
-1. Add OIDC-only readiness example output.
-2. Add OIDC handoff asset test.
-3. Add OIDC handoff no-JS limitation note.
-4. Add OIDC failure page status-code examples.
+1. Add OIDC handoff asset test.
+2. Add OIDC handoff no-JS limitation note.
+3. Add OIDC failure page status-code examples.
+4. Add readiness warning note for missing Redis in single-process trials.
 
 Suggested implementation order:
 
