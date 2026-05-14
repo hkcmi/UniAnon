@@ -146,6 +146,15 @@ In this mode, `/auth/request-link` returns `email_delivery_disabled` and does no
 
 Browser requests to `/auth/oidc/callback` receive a small handoff page that stores the session token and redirects users back to the UniAnon UI. Browser callback failures receive a styled failure page with a return link. JavaScript must be enabled for the browser handoff to complete because the session token is stored in `localStorage`. API clients that do not request HTML receive session JSON or JSON error codes.
 
+OIDC browser flow smoke plan:
+
+1. Open the UniAnon URL in a clean browser profile.
+2. Confirm the Access panel shows the OIDC sign-in control when `EMAIL_DELIVERY=disabled`.
+3. Start OIDC sign-in and complete the IdP login with a test member account.
+4. Confirm the callback handoff returns to the UniAnon UI and the header shows the signed-in pseudonymous user.
+5. Confirm a second refresh preserves the session without showing email or real-name claims.
+6. Try a non-member domain account and confirm the callback shows the failure page.
+
 Before running a real community or privacy-sensitive pilot, complete [PRODUCTION_PRIVACY_CHECKLIST.md](PRODUCTION_PRIVACY_CHECKLIST.md).
 
 For first-time community setup, role assignment, governance drills, and launch records, see [FIRST_COMMUNITY_LAUNCH.md](FIRST_COMMUNITY_LAUNCH.md).
