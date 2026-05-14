@@ -144,6 +144,8 @@ docker compose --env-file .env.oidc run --rm app npm run readiness:production
 
 In this mode, `/auth/request-link` returns `email_delivery_disabled` and does not create a magic token. The identity provider still sees that a user signed into UniAnon, so record the IdP trust boundary in the launch record.
 
+Current MVP note: `/auth/oidc/callback` returns session JSON after verifying the ID token. Before a public browser launch, add or deploy a callback handoff page that stores the session token and redirects users back to the UniAnon UI.
+
 Before running a real community or privacy-sensitive pilot, complete [PRODUCTION_PRIVACY_CHECKLIST.md](PRODUCTION_PRIVACY_CHECKLIST.md).
 
 For first-time community setup, role assignment, governance drills, and launch records, see [FIRST_COMMUNITY_LAUNCH.md](FIRST_COMMUNITY_LAUNCH.md).
