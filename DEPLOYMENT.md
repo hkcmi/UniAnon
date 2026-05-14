@@ -266,8 +266,14 @@ Example Caddy configuration:
 unianon.example.org {
   encode zstd gzip
   reverse_proxy 127.0.0.1:3000
+  @auth_paths path /auth/request-link /auth/verify /auth/exchange /auth/oidc/start /auth/oidc/callback
   header {
     Strict-Transport-Security "max-age=31536000; includeSubDomains"
+  }
+  header @auth_paths {
+    Cache-Control "no-store"
+    Pragma "no-cache"
+    Expires "0"
   }
   log {
     output file /var/log/caddy/unianon-access.log
@@ -285,6 +291,20 @@ server {
 
   client_max_body_size 128k;
   add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
+  location ~ ^/auth/(request-link|verify|exchange|oidc/(start|callback))$ {
+    add_header Cache-Control "no-store" always;
+    add_header Pragma "no-cache" always;
+    add_header Expires "0" always;
+    proxy_no_cache 1;
+    proxy_cache_bypass 1;
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
 
   location / {
     proxy_pass http://127.0.0.1:3000;
