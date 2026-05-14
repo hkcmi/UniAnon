@@ -11,7 +11,6 @@ import {
   normalizeEmail,
   publicUser
 } from './identity.js';
-import { createMailer } from './mailer.js';
 import { createMembershipAssertion, verifyMembershipAssertion } from './membership-assertion.js';
 import {
   createAuthorizationRequest,
@@ -21,16 +20,10 @@ import {
   fetchJwks,
   verifyIdToken
 } from './oidc.js';
-import { createOidcStateStore } from './oidc-state-store.js';
-import { createRateLimiter } from './rate-limit.js';
-import { createSessionService } from './session-service.js';
-import { createStore } from './store.js';
+import { createServices } from './services.js';
 
-export const store = createStore();
-export const rateLimiter = createRateLimiter();
-export const mailer = createMailer();
-export const oidcStateStore = createOidcStateStore({ ttlMs: config.oidc.stateTtlMs });
-export const sessionService = createSessionService(store);
+const services = createServices();
+export const { store, rateLimiter, mailer, oidcStateStore, sessionService } = services;
 export const app = express();
 
 if (config.trustProxy) {
