@@ -229,7 +229,7 @@ Start a minimal-claims OIDC sign-in. It is disabled unless `OIDC_ISSUER`, `OIDC_
 
 Complete OIDC sign-in after the identity provider redirects back with `code` and `state`. UniAnon verifies the provider metadata, exchanges the code, validates the RS256 `id_token` signature, issuer, audience, expiry, and nonce, then creates a session from `iss + sub`.
 
-Browser callback requests receive a small handoff page that stores the session token and redirects back to the UniAnon UI. API clients that do not request HTML receive session JSON.
+Browser callback requests receive a small handoff page that stores the session token and redirects back to the UniAnon UI. Browser callback failures receive a styled failure page with a return link. API clients that do not request HTML receive session JSON or JSON error codes.
 
 OIDC identity does not use email to derive the UniAnon user hash. Domain membership should come from a configured verified domain claim such as `hd`, `domain`, or `domain_group`; verified email fallback is supported only for providers that cannot issue a domain-only claim.
 
