@@ -319,6 +319,24 @@ Direct moderator bans cannot target the acting moderator or protected users with
 
 Protected users also require `ADMIN_PROTECTION_APPROVAL_WEIGHT` violation vote weight before a jury can approve a sanction.
 
+### `GET /admin/users`
+
+List users for operator role management. Requires a `system_admin` session. Responses include user hashes, nicknames, domain groups, trust levels, roles, and ban status. They do not include emails, nullifiers, tokens, or auth-provider subjects.
+
+### `POST /admin/roles`
+
+Request or approve a role change. Requires a `system_admin` session. Role changes are high-impact operations and require `HIGH_IMPACT_APPROVAL_COUNT` distinct system admin approvals before they apply.
+
+```json
+{ "user_hash": "target-user-hash", "role": "moderator", "action": "grant" }
+```
+
+Supported roles: `moderator`, `system_admin`.
+
+Supported actions: `grant`, `revoke`.
+
+System admins cannot revoke their own `system_admin` role, and UniAnon blocks removing the last active system admin.
+
 ### `GET /moderation/audit-log`
 
 Read moderation audit events. Requires a moderator session.

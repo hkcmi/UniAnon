@@ -138,6 +138,7 @@ PRAGMA table_info(auth_events);
 - [ ] New-user limits are reviewed before launch.
 - [ ] Moderator and trusted-user roles are assigned intentionally.
 - [ ] Protected-role sanction thresholds are set intentionally with `ADMIN_PROTECTION_APPROVAL_WEIGHT`.
+- [ ] System admin and moderator role changes use the multi-party role-management workflow.
 
 ## Governance And Moderation
 

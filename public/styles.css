@@ -356,6 +356,36 @@ h3 {
   padding: 8px 10px 10px;
 }
 
+.admin-block {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+
+.user-list {
+  display: grid;
+  gap: 6px;
+}
+
+.user-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fbfcfa;
+  padding: 8px;
+  font-size: 13px;
+}
+
+.user-row span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .case-actions,
 .appeal-actions {
   display: flex;

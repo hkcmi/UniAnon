@@ -157,6 +157,13 @@ function requireModerator(req, res, next) {
   return next();
 }
 
+function requireSystemAdmin(req, res, next) {
+  if (!req.user.roles.includes('system_admin')) {
+    return res.status(403).json({ error: 'system_admin_required' });
+  }
+  return next();
+}
+
 function requireTrustedJuror(req, res, next) {
   if (req.user.trust_level < 2) {
     return res.status(403).json({ error: 'trusted_juror_required' });
@@ -187,6 +194,38 @@ function reportWeight(user) {
 function reportThresholdForTarget(accusedHash) {
   const accused = store.users.get(accusedHash);
   return hasProtectedRole(accused) ? config.adminProtectionApprovalWeight : config.reportWeightThreshold;
+}
+
+function normalizeRoleChange(body) {
+  const targetHash = typeof body.user_hash === 'string' ? body.user_hash.trim() : '';
+  const role = typeof body.role === 'string' ? body.role.trim() : '';
+  const action = typeof body.action === 'string' ? body.action.trim() : '';
+
+  if (!['moderator', 'system_admin'].includes(role)) {
+    return { error: 'invalid_role' };
+  }
+
+  if (!['grant', 'revoke'].includes(action)) {
+    return { error: 'invalid_role_action' };
+  }
+
+  return {
+    payload: {
+      user_hash: targetHash,
+      role,
+      action
+    }
+  };
+}
+
+function roleChangeReason(payload) {
+  return `${payload.action} ${payload.role}`;
+}
+
+function countSystemAdmins() {
+  return [...store.users.values()].filter((user) => {
+    return !user.banned && user.roles.includes('system_admin');
+  }).length;
 }
 
 async function enforceRateLimit(req, res, limitName, subject) {
@@ -253,6 +292,22 @@ function serializeApprovalRequest(request) {
     created_at: request.created_at,
     resolved_at: request.resolved_at,
     result: request.result
+  };
+}
+
+function serializeRoleTarget(user) {
+  if (!user) {
+    return null;
+  }
+
+  return {
+    user_hash: user.user_hash,
+    user_ref: publicAuditRef(user.user_hash),
+    nickname: user.nickname || '[unset]',
+    domain_group: user.domain_group,
+    trust_level: user.trust_level,
+    roles: user.roles,
+    banned: user.banned
   };
 }
 
@@ -910,9 +965,80 @@ app.post('/spaces', requireAuth, requireModerator, (req, res) => {
 
 app.get('/approvals', requireAuth, requireModerator, (req, res) => {
   const approvals = [...store.approvalRequests.values()]
+    .filter((request) => req.user.roles.includes('system_admin') || request.operation !== 'change_role')
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
     .map(serializeApprovalRequest);
   res.json({ approvals });
+});
+
+app.get('/admin/users', requireAuth, requireSystemAdmin, (req, res) => {
+  const users = [...store.users.values()]
+    .sort((a, b) => a.created_at.localeCompare(b.created_at))
+    .map(serializeRoleTarget);
+
+  res.json({ users });
+});
+
+app.post('/admin/roles', requireAuth, requireSystemAdmin, (req, res) => {
+  const normalized = normalizeRoleChange(req.body);
+  if (normalized.error) {
+    return res.status(400).json({ error: normalized.error });
+  }
+
+  const { payload } = normalized;
+  const target = store.users.get(payload.user_hash);
+  if (!target) {
+    return res.status(404).json({ error: 'target_not_found' });
+  }
+
+  if (target.user_hash === req.user.user_hash && payload.role === 'system_admin' && payload.action === 'revoke') {
+    return res.status(400).json({ error: 'cannot_revoke_own_system_admin' });
+  }
+
+  if (payload.role === 'system_admin' && payload.action === 'revoke' && countSystemAdmins() <= 1) {
+    return res.status(409).json({ error: 'cannot_remove_last_system_admin' });
+  }
+
+  const alreadyHasRole = target.roles.includes(payload.role);
+  if (payload.action === 'grant' && alreadyHasRole) {
+    return res.status(409).json({ error: 'role_already_granted', user: serializeRoleTarget(target) });
+  }
+
+  if (payload.action === 'revoke' && !alreadyHasRole) {
+    return res.status(409).json({ error: 'role_not_granted', user: serializeRoleTarget(target) });
+  }
+
+  const existing = store.findOpenApprovalRequest('change_role', payload);
+  const approvalRequest = existing || store.createApprovalRequest('change_role', payload, req.user.user_hash);
+
+  if (existing && existing.created_by === req.user.user_hash && !existing.approvals.some((hash) => hash !== req.user.user_hash)) {
+    return res.status(409).json({
+      error: 'own_approval_not_sufficient',
+      approval_request: serializeApprovalRequest(existing)
+    });
+  }
+
+  if (existing) {
+    store.approveRequest(existing.id, req.user.user_hash);
+  }
+
+  if (approvalRequest.approvals.length < config.highImpactApprovalCount) {
+    return res.status(202).json({ approval_request: serializeApprovalRequest(approvalRequest) });
+  }
+
+  const updatedUser = store.setUserRole(
+    req.user.user_hash,
+    target.user_hash,
+    payload.role,
+    payload.action === 'grant',
+    roleChangeReason(payload)
+  );
+  store.resolveApprovalRequest(approvalRequest.id, { user_hash: target.user_hash, role: payload.role, action: payload.action });
+
+  return res.status(201).json({
+    user: serializeRoleTarget(updatedUser),
+    approval_request: serializeApprovalRequest(approvalRequest)
+  });
 });
 
 app.post('/users/nickname', requireAuth, (req, res) => {

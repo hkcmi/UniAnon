@@ -108,7 +108,7 @@ Recommended sequence:
 5. A normal member logs in for workflow testing.
 6. A test user is banned and used to test appeals.
 
-Current MVP role assignment is still operator-assisted through the database/store layer. Until an admin role-management UI exists, assign roles carefully in a controlled environment and record every change.
+Role assignment now uses the admin role-management workflow in the local web UI or `POST /admin/roles`. Role changes require `HIGH_IMPACT_APPROVAL_COUNT` distinct `system_admin` approvals before they apply.
 
 Role examples:
 
@@ -117,6 +117,15 @@ Role examples:
 - trusted juror: user with `trust_level >= 2`.
 
 After assigning roles, restart or refresh the app if needed so the in-memory store reflects database changes.
+
+Role-change records must include:
+
+- Target nickname or user hash:
+- Role:
+- Action:
+- Requested by:
+- Approved by:
+- Reason:
 
 ## Step 6: Create Initial Spaces
 

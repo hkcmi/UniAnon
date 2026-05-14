@@ -94,6 +94,25 @@
               <input id="spaceDomainsInput" name="allowed_domains" type="text" placeholder="example.org, example.edu">
               <button type="submit">Request space</button>
             </form>
+            <div id="roleManagement" class="admin-block hidden">
+              <h3>Roles</h3>
+              <form id="roleForm" class="stack">
+                <label for="roleUserHashInput">User hash</label>
+                <input id="roleUserHashInput" name="user_hash" type="text" placeholder="target user_hash" required>
+                <label for="roleSelect">Role</label>
+                <select id="roleSelect" name="role">
+                  <option value="moderator">Moderator</option>
+                  <option value="system_admin">System admin</option>
+                </select>
+                <label for="roleActionSelect">Action</label>
+                <select id="roleActionSelect" name="action">
+                  <option value="grant">Grant</option>
+                  <option value="revoke">Revoke</option>
+                </select>
+                <button type="submit">Request role change</button>
+              </form>
+              <div id="adminUserList" class="user-list"></div>
+            </div>
             <div id="approvalList" class="case-list"></div>
             <form id="banForm" class="stack">
               <label for="banUserHashInput">User hash</label>

@@ -752,6 +752,128 @@ test('restricts spaces by allowed email domain', async () => {
   assert.equal(store.auditLog.some((event) => event.operation === 'approval_resolved'), true);
 });
 
+test('requires multi-party system admin approval for role changes', async () => {
+  const admin = await signup('role-admin@example.edu', 'role_admin');
+  const secondAdmin = await signup('role-admin-2@example.edu', 'role_admin_2');
+  const moderator = await signup('role-moderator@example.edu', 'role_moderator');
+  const target = await signup('role-target@example.edu', 'role_target');
+
+  const adminUser = store.users.get(admin.user.user_hash);
+  adminUser.roles.push('system_admin');
+  store.persistUser(adminUser);
+  const secondAdminUser = store.users.get(secondAdmin.user.user_hash);
+  secondAdminUser.roles.push('system_admin');
+  store.persistUser(secondAdminUser);
+  const moderatorUser = store.users.get(moderator.user.user_hash);
+  moderatorUser.roles.push('moderator');
+  store.persistUser(moderatorUser);
+
+  const deniedList = await fetch(`${baseUrl}/admin/users`, {
+    headers: { authorization: `Bearer ${moderator.sessionToken}` }
+  });
+  assert.equal(deniedList.status, 403);
+
+  const userList = await fetch(`${baseUrl}/admin/users`, {
+    headers: { authorization: `Bearer ${admin.sessionToken}` }
+  });
+  assert.equal(userList.status, 200);
+  const { users } = await userList.json();
+  const listedTarget = users.find((user) => user.user_hash === target.user.user_hash);
+  assert.equal(listedTarget.nickname, 'role_target');
+  assert.equal(Object.hasOwn(listedTarget, 'email'), false);
+  assert.equal(Object.hasOwn(listedTarget, 'nullifier'), false);
+
+  const firstGrant = await fetch(`${baseUrl}/admin/roles`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${admin.sessionToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      user_hash: target.user.user_hash,
+      role: 'moderator',
+      action: 'grant'
+    })
+  });
+  assert.equal(firstGrant.status, 202);
+  const firstGrantResult = await firstGrant.json();
+  assert.equal(firstGrantResult.approval_request.operation, 'change_role');
+  assert.equal(store.users.get(target.user.user_hash).roles.includes('moderator'), false);
+
+  const moderatorApprovals = await fetch(`${baseUrl}/approvals`, {
+    headers: { authorization: `Bearer ${moderator.sessionToken}` }
+  });
+  assert.equal(moderatorApprovals.status, 200);
+  const moderatorApprovalResult = await moderatorApprovals.json();
+  assert.equal(moderatorApprovalResult.approvals.some((approval) => approval.operation === 'change_role'), false);
+
+  const selfApprove = await fetch(`${baseUrl}/admin/roles`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${admin.sessionToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify(firstGrantResult.approval_request.payload)
+  });
+  assert.equal(selfApprove.status, 409);
+
+  const secondGrant = await fetch(`${baseUrl}/admin/roles`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${secondAdmin.sessionToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify(firstGrantResult.approval_request.payload)
+  });
+  assert.equal(secondGrant.status, 201);
+  const secondGrantResult = await secondGrant.json();
+  assert.equal(secondGrantResult.user.roles.includes('moderator'), true);
+  assert.equal(store.users.get(target.user.user_hash).roles.includes('moderator'), true);
+  assert.equal(store.auditLog.some((event) => event.operation === 'role_granted'), true);
+
+  const revokeOwnAdmin = await fetch(`${baseUrl}/admin/roles`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${admin.sessionToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      user_hash: admin.user.user_hash,
+      role: 'system_admin',
+      action: 'revoke'
+    })
+  });
+  assert.equal(revokeOwnAdmin.status, 400);
+
+  const firstRevoke = await fetch(`${baseUrl}/admin/roles`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${admin.sessionToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      user_hash: target.user.user_hash,
+      role: 'moderator',
+      action: 'revoke'
+    })
+  });
+  assert.equal(firstRevoke.status, 202);
+  const firstRevokeResult = await firstRevoke.json();
+
+  const secondRevoke = await fetch(`${baseUrl}/admin/roles`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${secondAdmin.sessionToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify(firstRevokeResult.approval_request.payload)
+  });
+  assert.equal(secondRevoke.status, 201);
+  const secondRevokeResult = await secondRevoke.json();
+  assert.equal(secondRevokeResult.user.roles.includes('moderator'), false);
+  assert.equal(store.auditLog.some((event) => event.operation === 'role_revoked'), true);
+});
+
 test('allows moderators to ban users and read audit events', async () => {
   const moderator = await signup('audit-mod@example.edu', 'audit_mod');
   const target = await signup('audit-target@example.edu', 'audit_target');

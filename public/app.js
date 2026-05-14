@@ -6,6 +6,7 @@ const state = {
   cases: [],
   appeals: [],
   approvals: [],
+  adminUsers: [],
   auditLog: [],
   publicAuditLog: [],
   activeSpaceId: 'public'
@@ -38,6 +39,12 @@ const elements = {
   spaceForm: document.querySelector('#spaceForm'),
   spaceNameInput: document.querySelector('#spaceNameInput'),
   spaceDomainsInput: document.querySelector('#spaceDomainsInput'),
+  roleManagement: document.querySelector('#roleManagement'),
+  roleForm: document.querySelector('#roleForm'),
+  roleUserHashInput: document.querySelector('#roleUserHashInput'),
+  roleSelect: document.querySelector('#roleSelect'),
+  roleActionSelect: document.querySelector('#roleActionSelect'),
+  adminUserList: document.querySelector('#adminUserList'),
   approvalList: document.querySelector('#approvalList'),
   banForm: document.querySelector('#banForm'),
   banUserHashInput: document.querySelector('#banUserHashInput'),
@@ -89,14 +96,22 @@ function setStatus(element, message) {
   element.textContent = message || '';
 }
 
+function canModerate() {
+  return Boolean(state.user?.roles.includes('moderator') || state.user?.roles.includes('system_admin'));
+}
+
+function canManageRoles() {
+  return Boolean(state.user?.roles.includes('system_admin'));
+}
+
 function updateSessionView() {
   const signedIn = Boolean(state.user);
-  const canModerate = Boolean(state.user?.roles.includes('moderator') || state.user?.roles.includes('system_admin'));
   elements.authPanel.classList.toggle('hidden', signedIn);
   elements.logoutButton.classList.toggle('hidden', !signedIn);
   elements.composerPanel.classList.toggle('hidden', !signedIn || !state.user.nickname);
   elements.nicknamePanel.classList.toggle('hidden', !signedIn || Boolean(state.user.nickname));
-  elements.moderationPanel.classList.toggle('hidden', !canModerate);
+  elements.moderationPanel.classList.toggle('hidden', !canModerate());
+  elements.roleManagement.classList.toggle('hidden', !canManageRoles());
 
   if (!signedIn) {
     elements.sessionLine.textContent = 'Not signed in';
@@ -356,7 +371,7 @@ function renderAppeals() {
 function renderApprovals() {
   elements.approvalList.replaceChildren();
 
-  if (!state.user?.roles.includes('moderator') && !state.user?.roles.includes('system_admin')) {
+  if (!canModerate()) {
     return;
   }
 
@@ -377,15 +392,16 @@ function renderApprovals() {
     const payload = approval.payload || {};
     node.querySelector('.approval-title').textContent = approval.operation.replaceAll('_', ' ');
     node.querySelector('.approval-status').textContent = approval.status;
-    node.querySelector('.approval-detail').textContent = payload.name
-      ? `${payload.name} - ${(payload.allowed_domains || []).join(', ') || 'all verified domains'}`
-      : approval.id;
+    node.querySelector('.approval-detail').textContent = approvalDetail(approval);
     node.querySelector('.approval-count').textContent = String(approval.approvals_count);
     node.querySelector('.approval-required').textContent = String(approval.required_approvals);
     node.querySelector('.approval-time').textContent = formatTime(approval.created_at);
 
     const approveButton = node.querySelector('.approval-approve-button');
-    approveButton.classList.toggle('hidden', approval.status !== 'open');
+    approveButton.classList.toggle(
+      'hidden',
+      approval.status !== 'open' || (approval.operation === 'change_role' && !canManageRoles())
+    );
     approveButton.addEventListener('click', async () => {
       await approveRequest(approval);
     });
@@ -393,10 +409,58 @@ function renderApprovals() {
   }
 }
 
+function approvalDetail(approval) {
+  const payload = approval.payload || {};
+  if (approval.operation === 'create_space') {
+    return payload.name
+      ? `${payload.name} - ${(payload.allowed_domains || []).join(', ') || 'all verified domains'}`
+      : approval.id;
+  }
+
+  if (approval.operation === 'change_role') {
+    return `${payload.action || 'change'} ${payload.role || 'role'} for ${shortHash(payload.user_hash)}`;
+  }
+
+  return approval.id;
+}
+
+function renderAdminUsers() {
+  elements.adminUserList.replaceChildren();
+
+  if (!canManageRoles()) {
+    return;
+  }
+
+  if (state.adminUsers.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'muted';
+    empty.textContent = 'No users loaded.';
+    elements.adminUserList.append(empty);
+    return;
+  }
+
+  for (const user of state.adminUsers) {
+    const item = document.createElement('div');
+    item.className = 'user-row';
+    const label = document.createElement('span');
+    label.textContent = `${user.nickname || '[unset]'} - ${user.domain_group} - ${user.roles.join(', ') || 'member'}`;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'secondary mini-button';
+    button.textContent = 'Use';
+    button.addEventListener('click', () => {
+      elements.roleUserHashInput.value = user.user_hash;
+      elements.banUserHashInput.value = user.user_hash;
+    });
+    item.append(label, button);
+    elements.adminUserList.append(item);
+  }
+}
+
 function renderAuditLog() {
   elements.auditLogList.replaceChildren();
 
-  if (!state.user?.roles.includes('moderator') && !state.user?.roles.includes('system_admin')) {
+  if (!canModerate()) {
     return;
   }
 
@@ -509,7 +573,7 @@ async function loadAppeals() {
 }
 
 async function loadApprovals() {
-  if (!state.user?.roles.includes('moderator') && !state.user?.roles.includes('system_admin')) {
+  if (!canModerate()) {
     state.approvals = [];
     renderApprovals();
     return;
@@ -524,8 +588,24 @@ async function loadApprovals() {
   renderApprovals();
 }
 
+async function loadAdminUsers() {
+  if (!canManageRoles()) {
+    state.adminUsers = [];
+    renderAdminUsers();
+    return;
+  }
+
+  try {
+    const payload = await api('/admin/users');
+    state.adminUsers = payload.users;
+  } catch {
+    state.adminUsers = [];
+  }
+  renderAdminUsers();
+}
+
 async function loadAuditLog() {
-  if (!state.user?.roles.includes('moderator') && !state.user?.roles.includes('system_admin')) {
+  if (!canModerate()) {
     state.auditLog = [];
     renderAuditLog();
     return;
@@ -557,6 +637,7 @@ async function refreshAll() {
   await loadCases();
   await loadAppeals();
   await loadApprovals();
+  await loadAdminUsers();
   await loadAuditLog();
   await loadPublicAuditLog();
 }
@@ -607,15 +688,20 @@ async function voteAppeal(appealId, decision) {
 }
 
 async function approveRequest(approval) {
-  if (approval.operation !== 'create_space') {
-    return;
-  }
-
   try {
-    await api('/spaces', {
-      method: 'POST',
-      body: JSON.stringify(approval.payload)
-    });
+    if (approval.operation === 'create_space') {
+      await api('/spaces', {
+        method: 'POST',
+        body: JSON.stringify(approval.payload)
+      });
+    } else if (approval.operation === 'change_role') {
+      await api('/admin/roles', {
+        method: 'POST',
+        body: JSON.stringify(approval.payload)
+      });
+      await loadMe();
+      await loadAdminUsers();
+    }
     await loadSpaces();
     await loadApprovals();
     await loadAuditLog();
@@ -718,6 +804,32 @@ elements.spaceForm.addEventListener('submit', async (event) => {
   }
 });
 
+elements.roleForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  setStatus(elements.moderationStatus, 'Requesting role change...');
+  try {
+    const payload = await api('/admin/roles', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_hash: elements.roleUserHashInput.value,
+        role: elements.roleSelect.value,
+        action: elements.roleActionSelect.value
+      })
+    });
+    setStatus(
+      elements.moderationStatus,
+      payload.user ? 'Role change applied.' : 'Role change needs another system admin approval.'
+    );
+    await loadMe();
+    await loadAdminUsers();
+    await loadApprovals();
+    await loadAuditLog();
+    await loadPublicAuditLog();
+  } catch (error) {
+    setStatus(elements.moderationStatus, error.payload?.message || error.payload?.error || error.message);
+  }
+});
+
 elements.banForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   setStatus(elements.moderationStatus, 'Banning...');
@@ -745,6 +857,7 @@ elements.logoutButton.addEventListener('click', async () => {
   state.cases = [];
   state.appeals = [];
   state.approvals = [];
+  state.adminUsers = [];
   localStorage.removeItem('unianon:token');
   await refreshAll();
 });
@@ -752,6 +865,7 @@ elements.logoutButton.addEventListener('click', async () => {
 elements.refreshButton.addEventListener('click', refreshAll);
 elements.auditRefreshButton.addEventListener('click', async () => {
   await loadApprovals();
+  await loadAdminUsers();
   await loadAuditLog();
   await loadPublicAuditLog();
 });

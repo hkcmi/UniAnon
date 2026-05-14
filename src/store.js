@@ -821,6 +821,35 @@ export function createStore(options = {}) {
       return true;
     },
 
+    setUserRole(actorHash, targetHash, role, enabled, reason) {
+      const target = users.get(targetHash);
+      if (!target) {
+        return null;
+      }
+
+      const roles = new Set(target.roles);
+      if (enabled) {
+        roles.add(role);
+      } else {
+        roles.delete(role);
+      }
+
+      target.roles = [...roles].sort();
+      persistUser(target);
+      refreshTrustLevel(target.user_hash);
+      addAuditEvent({
+        id: nanoid(16),
+        operation: enabled ? 'role_granted' : 'role_revoked',
+        actor_hash: actorHash,
+        target_hash: target.user_hash,
+        target_type: 'user',
+        target_id: target.user_hash,
+        reason,
+        created_at: new Date().toISOString()
+      });
+      return target;
+    },
+
     createSpace(name, allowedDomains) {
       const space = {
         id: nanoid(12),
