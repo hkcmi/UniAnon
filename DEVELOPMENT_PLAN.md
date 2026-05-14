@@ -230,6 +230,8 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 - [x] Move report creation and duplicate handling into the report service.
 - [x] Extract governance resolution side effects into a governance resolution service.
 - [x] Move appeal membership-assertion actor authentication into the auth service.
+- [x] Extract magic-link request logging and token creation into an auth request service.
+- [x] Move protected-user report threshold lookup into the report service.
 
 ## Automation Backlog
 

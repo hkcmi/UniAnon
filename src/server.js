@@ -1,6 +1,7 @@
 import express from 'express';
 import helmet from 'helmet';
 import { createAuditService } from './audit-service.js';
+import { createAuthRequestService } from './auth-request-service.js';
 import { createApprovalService } from './approval-service.js';
 import { createAuthService } from './auth-service.js';
 import { assertProductionConfig, config } from './config.js';
@@ -42,6 +43,9 @@ export const authService = createAuthService({
   sessionService,
   sessionTtlMs: config.sessionTtlMs
 });
+export const authRequests = createAuthRequestService(store, {
+  tokenTtlMs: config.tokenTtlMs
+});
 export const contentService = createContentService(store);
 export const contentViews = createContentViewService(store);
 export const auditService = createAuditService(store);
@@ -55,7 +59,8 @@ export const governanceViews = createGovernanceViewService(store, {
 });
 export const moderationTargets = createModerationTargetService(store);
 export const reportService = createReportService(store, {
-  thresholdForAccused: (accusedHash) => reportThresholdForTarget(accusedHash)
+  reportWeightThreshold: config.reportWeightThreshold,
+  adminProtectionApprovalWeight: config.adminProtectionApprovalWeight
 });
 export const approvalService = createApprovalService(store, {
   requiredApprovals: config.highImpactApprovalCount
@@ -277,17 +282,8 @@ function requireTrustedJuror(req, res, next) {
   return next();
 }
 
-function hasProtectedRole(user) {
-  return Boolean(user?.roles.includes('moderator') || user?.roles.includes('system_admin'));
-}
-
 function voteWeight(user) {
   return Math.min(user.trust_level + 1, 4);
-}
-
-function reportThresholdForTarget(accusedHash) {
-  const accused = store.users.get(accusedHash);
-  return hasProtectedRole(accused) ? config.adminProtectionApprovalWeight : config.reportWeightThreshold;
 }
 
 async function enforceRateLimit(req, res, limitName, subject) {
@@ -359,8 +355,7 @@ app.get('/health', (req, res) => {
 app.post('/auth/request-link', async (req, res) => {
   const email = normalizeEmail(req.body.email);
   if (!email) {
-    store.logAuthEvent({
-      eventType: 'magic_link_requested',
+    authRequests.recordMagicLinkRequest({
       success: false,
       reason: 'invalid_email'
     });
@@ -368,8 +363,7 @@ app.post('/auth/request-link', async (req, res) => {
   }
 
   if (config.emailDelivery === 'disabled') {
-    store.logAuthEvent({
-      eventType: 'magic_link_requested',
+    authRequests.recordMagicLinkRequest({
       success: false,
       reason: 'email_delivery_disabled'
     });
@@ -379,8 +373,7 @@ app.post('/auth/request-link', async (req, res) => {
   const domainGroup = getDomain(email);
   const emailDigest = createEmailDigest(email, config.authLogSecret);
   if (!isAllowedDomain(email, config.allowedDomains)) {
-    store.logAuthEvent({
-      eventType: 'magic_link_requested',
+    authRequests.recordMagicLinkRequest({
       emailDigest,
       domainGroup,
       success: false,
@@ -393,8 +386,7 @@ app.post('/auth/request-link', async (req, res) => {
   const nullifier = createScopedNullifier(subjectHash, config.communityId, config.nullifierSecret);
   const emailAllowed = await enforceRateLimit(req, res, 'magicLinkEmail', subjectHash);
   if (!emailAllowed) {
-    store.logAuthEvent({
-      eventType: 'magic_link_requested',
+    authRequests.recordMagicLinkRequest({
       emailDigest,
       domainGroup,
       success: false,
@@ -405,8 +397,7 @@ app.post('/auth/request-link', async (req, res) => {
 
   const ipAllowed = await enforceRateLimit(req, res, 'magicLinkIp', req.ip);
   if (!ipAllowed) {
-    store.logAuthEvent({
-      eventType: 'magic_link_requested',
+    authRequests.recordMagicLinkRequest({
       emailDigest,
       domainGroup,
       success: false,
@@ -415,10 +406,9 @@ app.post('/auth/request-link', async (req, res) => {
     return;
   }
 
-  const token = store.createMagicToken(subjectHash, domainGroup, config.tokenTtlMs, nullifier);
+  const token = authRequests.createMagicToken({ subjectHash, domainGroup, nullifier });
   const deliveryResult = await mailer.sendMagicLink(email, token);
-  store.logAuthEvent({
-    eventType: 'magic_link_requested',
+  authRequests.recordMagicLinkRequest({
     emailDigest,
     domainGroup,
     success: true,

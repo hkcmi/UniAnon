@@ -6,6 +6,10 @@ function fakeStore() {
   const createdCases = [];
   let nextReportId = 1;
   return {
+    users: new Map([
+      ['member', { user_hash: 'member', roles: [] }],
+      ['moderator', { user_hash: 'moderator', roles: ['moderator'] }]
+    ]),
     reports: new Map([
       ['report-a', { id: 'report-a', target_type: 'post', target_id: 'post-a', weight: 2 }],
       ['report-b', { id: 'report-b', target_type: 'post', target_id: 'post-a', weight: 1 }],
@@ -82,6 +86,16 @@ test('calculates report weight from trust and account state', () => {
   assert.equal(service.reportWeight({ banned: false, nickname: 'new', trust_level: 0 }), 1);
   assert.equal(service.reportWeight({ banned: false, nickname: 'trusted', trust_level: 2 }), 3);
   assert.equal(service.reportWeight({ banned: false, nickname: 'core', trust_level: 4 }), 3);
+});
+
+test('uses protected-user report thresholds by default', () => {
+  const service = createReportService(fakeStore(), {
+    reportWeightThreshold: 3,
+    adminProtectionApprovalWeight: 8
+  });
+
+  assert.equal(service.openCaseIfThresholdReached('user', 'member', 'member').reportThreshold, 3);
+  assert.equal(service.openCaseIfThresholdReached('user', 'moderator', 'moderator').reportThreshold, 8);
 });
 
 test('submits reports and opens cases through the service boundary', () => {

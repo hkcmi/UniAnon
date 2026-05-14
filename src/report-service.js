@@ -1,5 +1,12 @@
 export function createReportService(store, options = {}) {
-  const thresholdForAccused = options.thresholdForAccused || (() => Infinity);
+  function hasProtectedRole(user) {
+    return Boolean(user?.roles.includes('moderator') || user?.roles.includes('system_admin'));
+  }
+
+  const thresholdForAccused = options.thresholdForAccused || ((accusedHash) => {
+    const accused = store.users?.get(accusedHash);
+    return hasProtectedRole(accused) ? options.adminProtectionApprovalWeight : options.reportWeightThreshold;
+  });
 
   function reportWeight(user) {
     if (user.banned || !user.nickname) {
