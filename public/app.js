@@ -17,6 +17,15 @@ const state = {
   activeSpaceId: 'public'
 };
 
+const demoAccounts = [
+  { key: '1', label: 'Moderator', email: 'moderator@example.edu' },
+  { key: '2', label: 'Juror', email: 'juror@example.edu' },
+  { key: '3', label: 'Reporter', email: 'reporter@example.edu' },
+  { key: '4', label: 'Member', email: 'member@example.edu' },
+  { key: '5', label: 'Accused', email: 'accused@example.edu' },
+  { key: '6', label: 'Org member', email: 'org-member@example.org' }
+];
+
 const elements = {
   sessionLine: document.querySelector('#sessionLine'),
   logoutButton: document.querySelector('#logoutButton'),
@@ -27,6 +36,7 @@ const elements = {
   oidcStartButton: document.querySelector('#oidcStartButton'),
   emailInput: document.querySelector('#emailInput'),
   tokenInput: document.querySelector('#tokenInput'),
+  demoAccountPicker: document.querySelector('#demoAccountPicker'),
   nicknamePanel: document.querySelector('#nicknamePanel'),
   nicknameForm: document.querySelector('#nicknameForm'),
   nicknameInput: document.querySelector('#nicknameInput'),
@@ -117,10 +127,39 @@ function updateAuthControls() {
   const oidcEnabled = state.authOptions.oidcEnabled;
   elements.requestLinkForm.classList.toggle('hidden', !emailLoginEnabled);
   elements.verifyForm.classList.toggle('hidden', !emailLoginEnabled || !elements.tokenInput.value);
+  elements.demoAccountPicker.classList.toggle('hidden', !emailLoginEnabled || !isLocalApp());
   elements.oidcStartButton.classList.toggle('hidden', !oidcEnabled);
 
   if (!state.user && !emailLoginEnabled) {
     setStatus(elements.authStatus, oidcEnabled ? 'Use OIDC sign-in.' : 'No login method is configured.');
+  }
+}
+
+function isLocalApp() {
+  return ['localhost', '127.0.0.1', ''].includes(window.location.hostname);
+}
+
+function chooseDemoAccount(account) {
+  elements.emailInput.value = account.email;
+  elements.emailInput.focus();
+  setStatus(elements.authStatus, `${account.label} selected.`);
+}
+
+function renderDemoAccounts() {
+  elements.demoAccountPicker.replaceChildren();
+  const label = document.createElement('span');
+  label.className = 'demo-picker-label';
+  label.textContent = 'Demo';
+  elements.demoAccountPicker.append(label);
+
+  for (const account of demoAccounts) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'demo-account-button';
+    button.textContent = `${account.key} ${account.label}`;
+    button.title = `${account.email} - Command/Ctrl + ${account.key}`;
+    button.addEventListener('click', () => chooseDemoAccount(account));
+    elements.demoAccountPicker.append(button);
   }
 }
 
@@ -1019,6 +1058,20 @@ elements.auditRefreshButton.addEventListener('click', async () => {
   await loadPublicAuditLog();
 });
 
+document.addEventListener('keydown', (event) => {
+  if ((!event.metaKey && !event.ctrlKey) || state.user || !isLocalApp()) {
+    return;
+  }
+
+  const account = demoAccounts.find((candidate) => candidate.key === event.key);
+  if (!account) {
+    return;
+  }
+
+  event.preventDefault();
+  chooseDemoAccount(account);
+});
+
 async function consumeTokenFromUrl() {
   const token = new URLSearchParams(window.location.search).get('token');
   if (!token) {
@@ -1044,6 +1097,8 @@ async function consumeTokenFromUrl() {
   }
   return true;
 }
+
+renderDemoAccounts();
 
 if (!(await consumeTokenFromUrl())) {
   refreshAll().catch((error) => {

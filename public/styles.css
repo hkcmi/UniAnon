@@ -228,6 +228,36 @@ h3 {
   align-self: end;
 }
 
+.demo-account-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.demo-picker-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.demo-account-button {
+  min-height: 30px;
+  border-color: var(--line);
+  background: var(--surface-soft);
+  color: var(--text);
+  padding: 0 9px;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.demo-account-button:hover {
+  border-color: var(--primary);
+  background: #edf7f4;
+  color: var(--primary-strong);
+}
+
 .inline-form {
   display: flex;
   gap: 8px;
