@@ -155,6 +155,14 @@ OIDC browser flow smoke plan:
 5. Confirm a second refresh preserves the session without showing email or real-name claims.
 6. Try a non-member domain account and confirm the callback shows the failure page.
 
+For local automation without a real IdP, run:
+
+```bash
+npm run smoke:oidc-browser
+```
+
+The smoke script starts UniAnon and a local fake OIDC provider, completes the start/authorize/callback handoff, executes `/oidc-handoff.js` against a browser-like `localStorage`, and confirms `/me` works with the resulting session token. It does not send email or contact an external identity provider.
+
 Before running a real community or privacy-sensitive pilot, complete [PRODUCTION_PRIVACY_CHECKLIST.md](PRODUCTION_PRIVACY_CHECKLIST.md).
 
 For first-time community setup, role assignment, governance drills, and launch records, see [FIRST_COMMUNITY_LAUNCH.md](FIRST_COMMUNITY_LAUNCH.md).

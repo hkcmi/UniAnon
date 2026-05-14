@@ -211,13 +211,14 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 
 ## Automation Backlog
 
-- [ ] Add an automated browser smoke test for the OIDC start/callback handoff using a local fake OIDC provider.
+- [x] Add an automated browser smoke test for the OIDC start/callback handoff using a local fake OIDC provider.
 
 ## Suggested Next Sprint
 
 Recommended next tasks:
 
-1. Add automated fake-OIDC browser smoke test.
+1. Replace in-memory store globals with repository/service boundaries.
+2. Add SendGrid or provider-adapter option for lower-privacy email pilots.
 
 Suggested implementation order:
 

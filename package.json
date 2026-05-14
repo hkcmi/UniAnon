@@ -10,6 +10,7 @@
     "seed:demo": "node scripts/seed-demo.js",
     "readiness:production": "node scripts/readiness-production.js",
     "smoke:production": "node scripts/smoke-production.js",
+    "smoke:oidc-browser": "NODE_ENV=test node scripts/smoke-oidc-browser.js",
     "test": "NODE_ENV=test node --test"
   },
   "dependencies": {
