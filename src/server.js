@@ -5,6 +5,7 @@ import { createAuthService } from './auth-service.js';
 import { assertProductionConfig, config } from './config.js';
 import { canAccessSpace, createContentService } from './content-service.js';
 import { createContentViewService } from './content-view-service.js';
+import { createGovernanceCaseService } from './governance-case-service.js';
 import { decideAppealResolution, decideCaseResolution } from './governance-decision-service.js';
 import { createGovernanceViewService, publicAuditRef } from './governance-view-service.js';
 import {
@@ -39,6 +40,7 @@ export const authService = createAuthService({
 });
 export const contentService = createContentService(store);
 export const contentViews = createContentViewService(store);
+export const governanceCases = createGovernanceCaseService(store);
 export const governanceViews = createGovernanceViewService(store, {
   approvalThresholdForCase: (moderationCase) => caseApprovalThreshold(moderationCase)
 });
@@ -950,15 +952,14 @@ app.post('/reports', requireAuth, requireNickname, async (req, res) => {
 });
 
 app.get('/governance/cases', requireAuth, requireTrustedJuror, (req, res) => {
-  const cases = [...store.moderationCases.values()]
-    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+  const cases = governanceCases.listCases()
     .map((moderationCase) => governanceViews.serializeCase(moderationCase));
 
   res.json({ cases });
 });
 
 app.get('/governance/cases/:caseId', requireAuth, requireTrustedJuror, (req, res) => {
-  const moderationCase = store.moderationCases.get(req.params.caseId);
+  const moderationCase = governanceCases.getCase(req.params.caseId);
   if (!moderationCase) {
     return res.status(404).json({ error: 'case_not_found' });
   }
@@ -978,38 +979,20 @@ app.post('/governance/cases/:caseId/votes', requireAuth, requireTrustedJuror, as
     return res.status(400).json({ error: 'invalid_action' });
   }
 
-  const moderationCase = store.moderationCases.get(req.params.caseId);
-  if (!moderationCase) {
-    return res.status(404).json({ error: 'case_not_found' });
-  }
-
-  if (moderationCase.accused_hash === req.user.user_hash) {
-    return res.status(400).json({ error: 'cannot_vote_on_own_case' });
-  }
-
-  if (moderationCase.juror_hashes.length > 0 && !moderationCase.juror_hashes.includes(req.user.user_hash)) {
-    return res.status(403).json({ error: 'juror_not_assigned' });
-  }
-
   const allowed = await enforceRateLimit(req, res, 'juryVote', req.user.user_hash);
   if (!allowed) {
     return;
   }
 
-  const result = store.addCaseVote(
-    moderationCase.id,
-    req.user.user_hash,
+  const result = governanceCases.addCaseVote({
+    caseId: req.params.caseId,
+    user: req.user,
     decision,
     action,
-    voteWeight(req.user)
-  );
-
-  if (!result) {
-    return res.status(409).json({ error: 'case_not_open' });
-  }
-
-  if (result.duplicate) {
-    return res.status(409).json({ error: 'duplicate_vote' });
+    weight: voteWeight(req.user)
+  });
+  if (!result.ok) {
+    return res.status(result.status).json({ error: result.error });
   }
 
   const resolvedCase = maybeResolveCase(result.moderationCase);
@@ -1043,25 +1026,28 @@ app.post('/appeals', (req, res) => {
     return res.status(403).json({ error: 'cannot_appeal_other_user_target' });
   }
 
-  const existing = store.findOpenAppealCase(appellant.user_hash, targetType, targetId);
-  if (existing) {
-    return res.status(409).json({ error: 'duplicate_appeal', appeal_id: existing.id });
+  const appeal = governanceCases.createAppeal({
+    appellant,
+    targetType,
+    targetId,
+    reason
+  });
+  if (!appeal.ok) {
+    return res.status(appeal.status).json({ error: appeal.error, appeal_id: appeal.appealId });
   }
 
-  const appealCase = store.createAppealCase(appellant.user_hash, targetType, targetId, reason);
-  return res.status(201).json({ appeal: governanceViews.serializeAppealCase(appealCase) });
+  return res.status(201).json({ appeal: governanceViews.serializeAppealCase(appeal.appealCase) });
 });
 
 app.get('/appeals', requireAuth, requireTrustedJuror, (req, res) => {
-  const appeals = [...store.appealCases.values()]
-    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+  const appeals = governanceCases.listAppeals()
     .map((appealCase) => governanceViews.serializeAppealCase(appealCase));
 
   res.json({ appeals });
 });
 
 app.get('/appeals/:appealId', requireAuth, requireTrustedJuror, (req, res) => {
-  const appealCase = store.appealCases.get(req.params.appealId);
+  const appealCase = governanceCases.getAppeal(req.params.appealId);
   if (!appealCase) {
     return res.status(404).json({ error: 'appeal_not_found' });
   }
@@ -1076,33 +1062,19 @@ app.post('/appeals/:appealId/votes', requireAuth, requireTrustedJuror, async (re
     return res.status(400).json({ error: 'invalid_decision' });
   }
 
-  const appealCase = store.appealCases.get(req.params.appealId);
-  if (!appealCase) {
-    return res.status(404).json({ error: 'appeal_not_found' });
-  }
-
-  if (appealCase.appellant_hash === req.user.user_hash) {
-    return res.status(400).json({ error: 'cannot_vote_on_own_appeal' });
-  }
-
   const allowed = await enforceRateLimit(req, res, 'juryVote', req.user.user_hash);
   if (!allowed) {
     return;
   }
 
-  const result = store.addAppealVote(
-    appealCase.id,
-    req.user.user_hash,
+  const result = governanceCases.addAppealVote({
+    appealId: req.params.appealId,
+    user: req.user,
     decision,
-    voteWeight(req.user)
-  );
-
-  if (!result) {
-    return res.status(409).json({ error: 'appeal_not_open' });
-  }
-
-  if (result.duplicate) {
-    return res.status(409).json({ error: 'duplicate_vote' });
+    weight: voteWeight(req.user)
+  });
+  if (!result.ok) {
+    return res.status(result.status).json({ error: result.error });
   }
 
   const resolvedAppeal = maybeResolveAppealCase(result.appealCase);
