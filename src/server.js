@@ -1,5 +1,6 @@
 import express from 'express';
 import helmet from 'helmet';
+import { createAuthService } from './auth-service.js';
 import { assertProductionConfig, config } from './config.js';
 import { createContentViewService } from './content-view-service.js';
 import { decideAppealResolution, decideCaseResolution } from './governance-decision-service.js';
@@ -13,7 +14,7 @@ import {
   normalizeEmail,
   publicUser
 } from './identity.js';
-import { createMembershipAssertion, verifyMembershipAssertion } from './membership-assertion.js';
+import { verifyMembershipAssertion } from './membership-assertion.js';
 import { buildMetricsSummary } from './metrics-service.js';
 import { createModerationTargetService } from './moderation-target-service.js';
 import {
@@ -29,6 +30,11 @@ import { createServices } from './services.js';
 
 const services = createServices();
 export const { store, rateLimiter, mailer, oidcStateStore, sessionService } = services;
+export const authService = createAuthService({
+  store,
+  sessionService,
+  sessionTtlMs: config.sessionTtlMs
+});
 export const contentViews = createContentViewService(store);
 export const governanceViews = createGovernanceViewService(store, {
   approvalThresholdForCase: (moderationCase) => caseApprovalThreshold(moderationCase)
@@ -602,53 +608,13 @@ app.post('/auth/request-link', async (req, res) => {
 });
 
 app.post('/auth/verify', (req, res) => {
-  const record = store.consumeMagicToken(req.body.token);
-  if (!record) {
-    return res.status(400).json({ error: 'invalid_or_expired_token' });
-  }
-
-  const membershipAssertion = createMembershipAssertion({
-    subjectHash: record.subject_hash,
-    domainGroup: record.domain_group,
-    nullifier: record.nullifier
-  });
-  const user = store.upsertUser(record.subject_hash, record.domain_group, record.nullifier);
-  if (user.banned) {
-    return res.status(403).json({
-      error: 'user_banned',
-      membership_assertion: membershipAssertion,
-      user: publicUser(user)
-    });
-  }
-  const sessionToken = sessionService.create(user.user_hash);
-
-  return res.json({
-    session_token: sessionToken,
-    membership_assertion: membershipAssertion,
-    expires_in: Math.floor(config.sessionTtlMs / 1000),
-    user: publicUser(user),
-    nickname_required: !user.nickname
-  });
+  const result = authService.verifyMagicToken(req.body.token);
+  return res.status(result.status).json(result.payload);
 });
 
 app.post('/auth/exchange', (req, res) => {
-  const assertion = verifyMembershipAssertion(req.body.membership_assertion);
-  if (!assertion) {
-    return res.status(400).json({ error: 'invalid_or_expired_assertion' });
-  }
-
-  const user = store.upsertUser(assertion.sub, assertion.domain_group, assertion.nullifier);
-  if (user.banned) {
-    return res.status(403).json({ error: 'user_banned' });
-  }
-  const sessionToken = sessionService.create(user.user_hash);
-
-  return res.json({
-    session_token: sessionToken,
-    expires_in: Math.floor(config.sessionTtlMs / 1000),
-    user: publicUser(user),
-    nickname_required: !user.nickname
-  });
+  const result = authService.exchangeMembershipAssertion(req.body.membership_assertion);
+  return res.status(result.status).json(result.payload);
 });
 
 app.get('/auth/oidc/start', async (req, res) => {
@@ -718,34 +684,22 @@ app.get('/auth/oidc/callback', async (req, res) => {
 
   const subjectHash = createUserHash(`${claims.iss}:${claims.sub}`, config.authSubjectSecret);
   const nullifier = createScopedNullifier(subjectHash, config.communityId, config.nullifierSecret);
-  const membershipAssertion = createMembershipAssertion({
+  const result = authService.loginWithMembership({
     subjectHash,
     domainGroup,
     nullifier
+  }, {
+    includeMembershipAssertion: true
   });
-  const user = store.upsertUser(subjectHash, domainGroup, nullifier);
-  if (user.banned) {
-    return res.status(403).json({
-      error: 'user_banned',
-      membership_assertion: membershipAssertion,
-      user: publicUser(user)
-    });
+  if (!result.ok) {
+    return res.status(result.status).json(result.payload);
   }
-  const sessionToken = sessionService.create(user.user_hash);
-
-  const payload = {
-    session_token: sessionToken,
-    membership_assertion: membershipAssertion,
-    expires_in: Math.floor(config.sessionTtlMs / 1000),
-    user: publicUser(user),
-    nickname_required: !user.nickname
-  };
 
   if (wantsHtml(req)) {
-    return res.type('html').send(renderOidcCallbackHandoff(payload));
+    return res.type('html').send(renderOidcCallbackHandoff(result.payload));
   }
 
-  return res.json(payload);
+  return res.json(result.payload);
 });
 
 app.get('/me', requireAuth, (req, res) => {

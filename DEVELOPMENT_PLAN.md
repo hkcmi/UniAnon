@@ -217,6 +217,7 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 - [x] Extract report and appeal target lookup into a moderation target service.
 - [x] Extract report aggregation and case-opening threshold logic into a report service.
 - [x] Extract jury appeal/case decision calculation into a governance decision service.
+- [x] Extract membership login/session payload creation into an auth service.
 
 ## Automation Backlog
 
