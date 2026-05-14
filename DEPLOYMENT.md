@@ -258,6 +258,7 @@ Required properties:
 - HTTP-to-HTTPS redirect is enabled at the proxy.
 - HSTS is enabled after the HTTPS deployment is confirmed stable.
 - The OIDC handoff asset `/oidc-handoff.js` is not cached beyond the deployed release; stale handoff JavaScript can break browser sign-in.
+- Auth routes are not cached by the proxy or CDN: `/auth/request-link`, `/auth/verify`, `/auth/exchange`, `/auth/oidc/start`, and `/auth/oidc/callback`.
 
 Example Caddy configuration:
 
