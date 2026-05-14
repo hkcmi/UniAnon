@@ -178,6 +178,21 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for the full local deployment guide.
 
 Error responses keep a stable machine-readable `error` code and include a user-facing `message`.
 
+### `GET /health`
+
+Read public instance health and login-mode flags.
+
+Example:
+
+```json
+{
+  "ok": true,
+  "allowed_domains": ["example.edu"],
+  "email_login_enabled": false,
+  "oidc_enabled": true
+}
+```
+
 ### `POST /auth/request-link`
 
 Request a magic link token for an allowed email domain.
@@ -185,6 +200,8 @@ Request a magic link token for an allowed email domain.
 ```json
 { "email": "student@example.edu" }
 ```
+
+When `EMAIL_DELIVERY=disabled`, this endpoint returns `501` with `email_delivery_disabled`. It does not create a magic token and does not record an email digest for that request.
 
 ### `POST /auth/verify`
 
