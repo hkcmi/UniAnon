@@ -50,3 +50,10 @@ jobs:
           SMTP_HOST=smtp.invalid \
           REDIS_URL=redis://localhost:6379 \
           npm run readiness:production
+
+      - name: Run system admin bootstrap dry run
+        run: |
+          mkdir -p /tmp/unianon-ci
+          DATABASE_PATH=/tmp/unianon-ci/bootstrap.sqlite node --input-type=module -e "import { createStore } from './src/store.js'; const store = createStore(); const user = store.upsertUser('ci-bootstrap-user', 'example.edu', 'ci-bootstrap-nullifier'); store.setNickname(user.user_hash, 'ci_bootstrap_admin'); store.close();"
+          DATABASE_PATH=/tmp/unianon-ci/bootstrap.sqlite npm run admin:bootstrap -- --nickname ci_bootstrap_admin
+          DATABASE_PATH=/tmp/unianon-ci/bootstrap.sqlite node --input-type=module -e "import { createStore } from './src/store.js'; const store = createStore(); const user = store.users.get('ci-bootstrap-user'); if (!user.roles.includes('system_admin')) process.exit(1); store.close();"
