@@ -121,4 +121,4 @@ If a metric could help an operator identify who posted, reported, voted, appeale
 
 ## Current Prototype
 
-The MVP exposes `GET /metrics/summary` for moderators. It returns local day-level aggregate buckets for account creation, posts, comments, reports, governance cases, appeals, and audit events. Activity buckets below 10 events are suppressed as `1-9`; the endpoint does not return user ids, emails, nullifiers, IP addresses, user agents, tokens, or content text.
+The MVP exposes `GET /metrics/summary` for moderators. It returns local day-level aggregate buckets for account creation, posts, comments, reports, governance cases, appeals, and audit events from the last 90 days. Activity buckets below 10 events are suppressed as `1-9`; the endpoint does not return user ids, emails, nullifiers, IP addresses, user agents, tokens, or content text.

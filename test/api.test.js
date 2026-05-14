@@ -906,6 +906,10 @@ test('requires multi-party system admin approval for role changes', async () => 
   });
   assert.equal(deniedMetrics.status, 403);
 
+  const oldMetricsUser = store.upsertUser('old-metrics-user', 'example.edu', 'old-metrics-nullifier');
+  oldMetricsUser.created_at = new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString();
+  store.persistUser(oldMetricsUser);
+
   const metricsResponse = await fetch(`${baseUrl}/metrics/summary`, {
     headers: { authorization: `Bearer ${moderator.sessionToken}` }
   });
@@ -913,6 +917,7 @@ test('requires multi-party system admin approval for role changes', async () => 
   const { metrics } = await metricsResponse.json();
   assert.equal(metrics.min_activity_bucket_size, 10);
   assert.equal(Array.isArray(metrics.buckets), true);
+  assert.equal(metrics.buckets.some((bucket) => bucket.date === oldMetricsUser.created_at.slice(0, 10)), false);
   assert.equal(JSON.stringify(metrics).includes(target.user.user_hash), false);
   assert.equal(JSON.stringify(metrics).includes('role-target@example.edu'), false);
 });

@@ -232,7 +232,12 @@ function dayKey(value) {
   return new Date(value).toISOString().slice(0, 10);
 }
 
-function incrementMetricBucket(buckets, createdAt, name) {
+function incrementMetricBucket(buckets, createdAt, name, cutoffMs) {
+  const createdMs = new Date(createdAt).getTime();
+  if (!Number.isFinite(createdMs) || createdMs < cutoffMs) {
+    return;
+  }
+
   const key = dayKey(createdAt);
   const bucket = buckets.get(key) || {
     date: key,
@@ -271,32 +276,34 @@ function serializeMetricsBucket(bucket) {
 
 function buildMetricsSummary() {
   const buckets = new Map();
+  const retentionDays = 90;
+  const cutoffMs = Date.now() - (retentionDays * 24 * 60 * 60 * 1000);
 
   for (const user of store.users.values()) {
-    incrementMetricBucket(buckets, user.created_at, 'accounts_created');
+    incrementMetricBucket(buckets, user.created_at, 'accounts_created', cutoffMs);
   }
   for (const post of store.posts.values()) {
-    incrementMetricBucket(buckets, post.created_at, 'posts_created');
+    incrementMetricBucket(buckets, post.created_at, 'posts_created', cutoffMs);
   }
   for (const comment of store.comments.values()) {
-    incrementMetricBucket(buckets, comment.created_at, 'comments_created');
+    incrementMetricBucket(buckets, comment.created_at, 'comments_created', cutoffMs);
   }
   for (const report of store.reports.values()) {
-    incrementMetricBucket(buckets, report.created_at, 'reports_created');
+    incrementMetricBucket(buckets, report.created_at, 'reports_created', cutoffMs);
   }
   for (const moderationCase of store.moderationCases.values()) {
-    incrementMetricBucket(buckets, moderationCase.created_at, 'cases_opened');
+    incrementMetricBucket(buckets, moderationCase.created_at, 'cases_opened', cutoffMs);
   }
   for (const appealCase of store.appealCases.values()) {
-    incrementMetricBucket(buckets, appealCase.created_at, 'appeals_opened');
+    incrementMetricBucket(buckets, appealCase.created_at, 'appeals_opened', cutoffMs);
   }
   for (const event of store.auditLog) {
-    incrementMetricBucket(buckets, event.created_at, 'audit_events');
+    incrementMetricBucket(buckets, event.created_at, 'audit_events', cutoffMs);
   }
 
   return {
     generated_at: new Date().toISOString(),
-    retention_days: 90,
+    retention_days: retentionDays,
     min_activity_bucket_size: 10,
     buckets: [...buckets.values()]
       .sort((a, b) => b.date.localeCompare(a.date))

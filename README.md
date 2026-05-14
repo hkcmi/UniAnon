@@ -349,7 +349,7 @@ List users for operator role management. Requires a `system_admin` session. Resp
 
 ### `GET /metrics/summary`
 
-Read local aggregate operational metrics. Requires a moderator session. The prototype returns day buckets for account creation, posts, comments, reports, governance cases, appeals, and audit events. Activity buckets below 10 events are suppressed as `1-9`; metrics do not include user ids, emails, nullifiers, IP addresses, user agents, tokens, or content text.
+Read local aggregate operational metrics. Requires a moderator session. The prototype returns day buckets for account creation, posts, comments, reports, governance cases, appeals, and audit events from the last 90 days. Activity buckets below 10 events are suppressed as `1-9`; metrics do not include user ids, emails, nullifiers, IP addresses, user agents, tokens, or content text.
 
 ### `POST /admin/roles`
 
