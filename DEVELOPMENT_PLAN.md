@@ -153,15 +153,16 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 - [x] Add operator-facing production readiness checklist command.
 - [x] Add privacy-preserving aggregate metrics prototype.
 - [x] Add system admin bootstrap command for first deployment.
+- [x] Add appeal detail route for focused appeal review.
 
 ## Suggested Next Sprint
 
 Recommended next tasks:
 
-1. Add appeal detail route for focused appeal review.
-2. Add readiness command tests for database migration inspection.
-3. Add local metrics retention pruning.
-4. Add bootstrap command tests for first-admin safety.
+1. Add readiness command tests for database migration inspection.
+2. Add local metrics retention pruning.
+3. Add bootstrap command tests for first-admin safety.
+4. Add moderator-facing appeal detail link in the local UI.
 
 Suggested implementation order:
 

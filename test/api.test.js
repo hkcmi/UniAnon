@@ -652,6 +652,20 @@ test('allows banned users to appeal with a membership assertion', async () => {
   assert.equal(listedAppeal.target.user.nickname, 'appeal_target');
   assert.match(listedAppeal.target.id, /^[a-f0-9]{12}$/);
 
+  const deniedAppealDetail = await fetch(`${baseUrl}/appeals/${appealResult.appeal.id}`, {
+    headers: { authorization: `Bearer ${target.sessionToken}` }
+  });
+  assert.equal(deniedAppealDetail.status, 403);
+
+  const appealDetail = await fetch(`${baseUrl}/appeals/${appealResult.appeal.id}`, {
+    headers: { authorization: `Bearer ${juror.sessionToken}` }
+  });
+  assert.equal(appealDetail.status, 200);
+  const appealDetailResult = await appealDetail.json();
+  assert.equal(appealDetailResult.appeal.id, appealResult.appeal.id);
+  assert.equal(appealDetailResult.appeal.appellant.nickname, 'appeal_target');
+  assert.equal(Object.hasOwn(appealDetailResult.appeal.appellant, 'email'), false);
+
   const voteResponse = await fetch(`${baseUrl}/appeals/${appealResult.appeal.id}/votes`, {
     method: 'POST',
     headers: {

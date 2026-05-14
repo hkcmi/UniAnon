@@ -317,6 +317,10 @@ List appeal cases. Requires a trusted user with `trust_level >= 2`.
 
 Appeal responses include the appellant, target summary, vote summaries, and resolution state using the same redacted evidence format.
 
+### `GET /appeals/:appealId`
+
+Read one appeal case with the same redacted evidence shape as the appeal list. Requires a trusted user with `trust_level >= 2`.
+
 ### `POST /appeals/:appealId/votes`
 
 Submit an appeal jury vote. Requires a trusted user with `trust_level >= 2`.

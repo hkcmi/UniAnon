@@ -1367,6 +1367,15 @@ app.get('/appeals', requireAuth, requireTrustedJuror, (req, res) => {
   res.json({ appeals });
 });
 
+app.get('/appeals/:appealId', requireAuth, requireTrustedJuror, (req, res) => {
+  const appealCase = store.appealCases.get(req.params.appealId);
+  if (!appealCase) {
+    return res.status(404).json({ error: 'appeal_not_found' });
+  }
+
+  return res.json({ appeal: serializeAppealCase(appealCase) });
+});
+
 app.post('/appeals/:appealId/votes', requireAuth, requireTrustedJuror, async (req, res) => {
   const decision = req.body.decision;
 
