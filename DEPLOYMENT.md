@@ -192,6 +192,15 @@ docker compose run --rm \
   app npm run readiness:production
 ```
 
+For OIDC-only deployments with `EMAIL_DELIVERY=disabled`, a healthy readiness summary should include:
+
+- `[PASS] OIDC`
+- `[PASS] OIDC scopes`
+- No `[FAIL] SMTP`
+- `0 failures`
+
+SMTP privacy warnings are expected only when `EMAIL_DELIVERY=smtp`.
+
 Readiness triage:
 
 - `FAIL NODE_ENV`: run the command with `NODE_ENV=production`; do not treat development output as a launch check.
