@@ -238,6 +238,8 @@ Common callback failures:
 - `502 oidc_provider_unavailable`: discovery, token, or JWKS metadata could not be loaded or validated.
 - `403 domain_not_allowed`: the verified domain claim is absent or outside `ALLOWED_DOMAINS`.
 
+OIDC `state` values are single-use. Refreshing or replaying the callback URL after a successful handoff should fail with `oidc_invalid_callback`.
+
 OIDC identity does not use email to derive the UniAnon user hash. Domain membership should come from a configured verified domain claim such as `hd`, `domain`, or `domain_group`; verified email fallback is supported only for providers that cannot issue a domain-only claim.
 
 ### `POST /users/nickname`
