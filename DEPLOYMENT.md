@@ -190,6 +190,18 @@ docker compose run --rm \
   app npm run readiness:production
 ```
 
+Readiness triage:
+
+- `FAIL NODE_ENV`: run the command with `NODE_ENV=production`; do not treat development output as a launch check.
+- `FAIL production config`: fix every listed secret, `APP_BASE_URL`, `ALLOWED_DOMAINS`, and email mode issue before launch.
+- `FAIL OIDC`: set `OIDC_ISSUER`, `OIDC_CLIENT_ID`, and `OIDC_REDIRECT_URI` together, or remove all three for non-OIDC pilots.
+- `WARN OIDC scopes`: remove `email`, `profile`, and `name` unless the launch record explicitly accepts that privacy tradeoff.
+- `FAIL SMTP`: set `SMTP_HOST` for SMTP pilots, or use `EMAIL_DELIVERY=disabled` for OIDC-only deployments.
+- `WARN SMTP privacy`: record SMTP as lower privacy; this warning is expected for SMTP pilots.
+- `WARN Redis`: acceptable only for single-process local trials; configure Redis for Docker or multi-process deployments.
+- `FAIL database`: create or mount the production SQLite database, then rerun without `READINESS_SKIP_DB=true`.
+- Use `READINESS_SKIP_DB=true` only for configuration dry runs before the production database exists.
+
 ## Reverse Proxy And TLS
 
 Production deployments should terminate TLS at a reverse proxy such as Caddy, Nginx, Traefik, or a managed load balancer. The Node app should not be directly exposed to the public internet.
