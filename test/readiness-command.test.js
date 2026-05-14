@@ -49,6 +49,37 @@ test('production readiness command verifies schema migrations', async () => {
   }
 });
 
+test('production readiness command allows OIDC-only email-disabled configuration', async () => {
+  const tempDir = await mkdtemp(path.join(tmpdir(), 'unianon-readiness-oidc-test-'));
+  const databasePath = path.join(tempDir, 'unianon.sqlite');
+
+  try {
+    const store = createStore({ databasePath });
+    store.close();
+
+    const { stdout } = await execFileAsync(process.execPath, ['scripts/readiness-production.js'], {
+      cwd: process.cwd(),
+      env: safeEnv(databasePath, {
+        EMAIL_DELIVERY: 'disabled',
+        EMAIL_FROM: 'UniAnon <no-reply@unianon-readiness.example.edu>',
+        SMTP_HOST: '',
+        OIDC_ISSUER: 'https://idp.example.edu',
+        OIDC_CLIENT_ID: 'readiness-client',
+        OIDC_REDIRECT_URI: 'https://unianon-readiness.example.edu/auth/oidc/callback',
+        OIDC_SCOPES: 'openid',
+        OIDC_DOMAIN_CLAIMS: 'hd,domain,domain_group'
+      })
+    });
+
+    assert.match(stdout, /\[PASS\] OIDC:/);
+    assert.match(stdout, /\[PASS\] OIDC scopes:/);
+    assert.doesNotMatch(stdout, /\[FAIL\] SMTP:/);
+    assert.match(stdout, /0 failures/);
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
+
 test('production readiness command fails unsafe production config', async () => {
   const tempDir = await mkdtemp(path.join(tmpdir(), 'unianon-readiness-fail-test-'));
   const databasePath = path.join(tempDir, 'unianon.sqlite');
