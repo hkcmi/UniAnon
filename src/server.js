@@ -20,6 +20,7 @@ import {
 } from './identity.js';
 import { verifyMembershipAssertion } from './membership-assertion.js';
 import { buildMetricsSummary } from './metrics-service.js';
+import { createModerationActionService } from './moderation-action-service.js';
 import { createModerationTargetService } from './moderation-target-service.js';
 import {
   createAuthorizationRequest,
@@ -59,6 +60,9 @@ export const approvalService = createApprovalService(store, {
 export const roleService = createRoleService(store);
 export const spaceService = createSpaceService(store);
 export const profileService = createProfileService(store);
+export const moderationActions = createModerationActionService(store, {
+  protectedUserApprovalWeight: config.adminProtectionApprovalWeight
+});
 export const app = express();
 
 if (config.trustProxy) {
@@ -924,31 +928,14 @@ app.post('/appeals/:appealId/votes', requireAuth, requireTrustedJuror, async (re
 app.post('/moderation/ban', requireAuth, requireModerator, (req, res) => {
   const targetHash = typeof req.body.user_hash === 'string' ? req.body.user_hash : '';
   const reason = validateContent(req.body.reason) || 'No reason provided';
-  const target = store.users.get(targetHash);
+  const result = moderationActions.directBan({ actor: req.user, targetHash, reason });
 
-  if (!target) {
-    return res.status(404).json({ error: 'target_not_found' });
-  }
-
-  if (target.user_hash === req.user.user_hash) {
-    return res.status(400).json({ error: 'cannot_ban_self' });
-  }
-
-  if (target.banned) {
-    return res.status(409).json({ error: 'target_already_banned' });
-  }
-
-  if (hasProtectedRole(target)) {
-    return res.status(403).json({
-      error: 'protected_user_requires_governance',
-      required_approval_weight: config.adminProtectionApprovalWeight
-    });
-  }
-
-  const ok = store.banUser(req.user.user_hash, targetHash, reason);
-
-  if (!ok) {
-    return res.status(404).json({ error: 'target_not_found' });
+  if (!result.ok) {
+    const body = { error: result.error };
+    if (result.required_approval_weight) {
+      body.required_approval_weight = result.required_approval_weight;
+    }
+    return res.status(result.status).json(body);
   }
 
   return res.status(201).json({ ok: true });

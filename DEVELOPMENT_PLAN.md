@@ -226,6 +226,7 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 - [x] Extract space listing and creation into a space service.
 - [x] Move approval request read/resolve operations into the approval service.
 - [x] Extract nickname validation and profile updates into a profile service.
+- [x] Extract direct moderator ban safeguards into a moderation action service.
 
 ## Automation Backlog
 
