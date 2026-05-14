@@ -181,15 +181,16 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 - [x] Add README link from readiness command to deployment triage notes.
 - [x] Add launch record field for identity provider privacy owner.
 - [x] Add OIDC callback web handoff note.
+- [x] Add health endpoint auth-mode test to CI summary docs.
 
 ## Suggested Next Sprint
 
 Recommended next tasks:
 
-1. Add health endpoint auth-mode test to CI summary docs.
-2. Add production note for disabled magic-link login.
-3. Add first-week review item for IdP claim minimization.
-4. Implement OIDC callback browser handoff page.
+1. Add production note for disabled magic-link login.
+2. Add first-week review item for IdP claim minimization.
+3. Implement OIDC callback browser handoff page.
+4. Add OIDC callback browser handoff tests.
 
 Suggested implementation order:
 

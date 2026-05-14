@@ -66,6 +66,7 @@ jobs:
             echo "| Check | Status | Privacy note |"
             echo "| --- | --- | --- |"
             echo "| Test suite | Passed | Runs with NODE_ENV=test and local data only. |"
+            echo "| Health auth-mode flags | Passed | Tests cover disabled email login and OIDC-enabled reporting. |"
             echo "| Production smoke | Passed | Uses smtp.invalid and does not send real email. |"
             echo "| Production readiness dry run | Passed | Uses a temporary SQLite database and fake production secrets. |"
             echo "| System admin bootstrap dry run | Passed | Uses a temporary fixture user and database. |"
