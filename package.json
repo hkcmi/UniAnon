@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
+    "admin:bootstrap": "node scripts/bootstrap-system-admin.js",
     "seed:demo": "node scripts/seed-demo.js",
     "readiness:production": "node scripts/readiness-production.js",
     "smoke:production": "node scripts/smoke-production.js",

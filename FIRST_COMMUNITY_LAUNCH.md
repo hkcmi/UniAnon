@@ -110,6 +110,14 @@ Recommended sequence:
 
 Role assignment now uses the admin role-management workflow in the local web UI or `POST /admin/roles`. Role changes require `HIGH_IMPACT_APPROVAL_COUNT` distinct `system_admin` approvals before they apply.
 
+For the first deployment only, after the first administrator has logged in and set a nickname, bootstrap the initial `system_admin`:
+
+```bash
+DATABASE_PATH=data/unianon.sqlite npm run admin:bootstrap -- --nickname first_admin_nickname
+```
+
+The bootstrap command refuses to run once any active `system_admin` already exists. Use the in-app multi-party role-management workflow for every later role change.
+
 Role examples:
 
 - `system_admin`: deployment or emergency operator.

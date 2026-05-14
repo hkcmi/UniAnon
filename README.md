@@ -120,6 +120,14 @@ NODE_ENV=production npm run readiness:production
 
 The readiness command checks production config, auth mode, Redis configuration, required privacy/runbook documents, and SQLite migration state. It does not call external providers or send email.
 
+Bootstrap the first system admin after that user has logged in and set a nickname:
+
+```bash
+DATABASE_PATH=data/unianon.sqlite npm run admin:bootstrap -- --nickname first_admin_nickname
+```
+
+The bootstrap command only works while no active `system_admin` exists. Later role changes use the multi-party role-management workflow.
+
 ## Docker
 
 Build and run the local MVP:
