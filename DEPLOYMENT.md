@@ -241,6 +241,7 @@ Required properties:
 - Upload/body size limits stay small; the app currently accepts JSON up to `64kb`.
 - HTTP-to-HTTPS redirect is enabled at the proxy.
 - HSTS is enabled after the HTTPS deployment is confirmed stable.
+- The OIDC handoff asset `/oidc-handoff.js` is not cached beyond the deployed release; stale handoff JavaScript can break browser sign-in.
 
 Example Caddy configuration:
 
