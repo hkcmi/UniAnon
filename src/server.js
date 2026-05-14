@@ -4,7 +4,7 @@ import { createAuditService } from './audit-service.js';
 import { createApprovalService } from './approval-service.js';
 import { createAuthService } from './auth-service.js';
 import { assertProductionConfig, config } from './config.js';
-import { canAccessSpace, createContentService } from './content-service.js';
+import { createContentService } from './content-service.js';
 import { createContentViewService } from './content-view-service.js';
 import { createGovernanceCaseService } from './governance-case-service.js';
 import { decideAppealResolution, decideCaseResolution } from './governance-decision-service.js';
@@ -32,6 +32,7 @@ import {
 import { createReportService } from './report-service.js';
 import { createRoleService, normalizeRoleChange } from './role-service.js';
 import { createServices } from './services.js';
+import { createSpaceService, normalizeSpaceRequest } from './space-service.js';
 
 const services = createServices();
 export const { store, rateLimiter, mailer, oidcStateStore, sessionService } = services;
@@ -55,6 +56,7 @@ export const approvalService = createApprovalService(store, {
   requiredApprovals: config.highImpactApprovalCount
 });
 export const roleService = createRoleService(store);
+export const spaceService = createSpaceService(store);
 export const app = express();
 
 if (config.trustProxy) {
@@ -309,15 +311,6 @@ async function enforceRateLimit(req, res, limitName, subject) {
   return false;
 }
 
-function serializeSpace(space) {
-  return {
-    id: space.id,
-    name: space.name,
-    allowed_domains: space.allowed_domains,
-    created_at: space.created_at
-  };
-}
-
 function serializeApprovalRequest(request) {
   return {
     id: request.id,
@@ -387,19 +380,6 @@ function validateNickname(nickname) {
   }
 
   if (canonical.includes('http') || canonical.includes('www') || canonical.includes('dotcom')) {
-    return null;
-  }
-
-  return trimmed;
-}
-
-function validateSpaceName(name) {
-  if (typeof name !== 'string') {
-    return null;
-  }
-
-  const trimmed = name.trim();
-  if (trimmed.length < 2 || trimmed.length > 80) {
     return null;
   }
 
@@ -647,32 +627,20 @@ app.get('/me', requireAuth, (req, res) => {
 });
 
 app.get('/spaces', optionalAuth, (req, res) => {
-  const spaces = [...store.spaces.values()]
-    .filter((space) => canAccessSpace(req.user, space))
-    .map(serializeSpace);
-
-  res.json({ spaces });
+  res.json({ spaces: spaceService.listAccessibleSpaces(req.user) });
 });
 
 app.post('/spaces', requireAuth, requireModerator, (req, res) => {
-  const name = validateSpaceName(req.body.name);
-  const allowedDomains = Array.isArray(req.body.allowed_domains)
-    ? req.body.allowed_domains.map((domain) => String(domain).trim().toLowerCase()).filter(Boolean)
-    : [];
-
-  if (!name) {
-    return res.status(400).json({ error: 'invalid_space_name' });
+  const normalized = normalizeSpaceRequest(req.body, config.allowedDomains);
+  if (normalized.error) {
+    const body = { error: normalized.error };
+    if (normalized.domain) {
+      body.domain = normalized.domain;
+    }
+    return res.status(400).json(body);
   }
 
-  const unknownDomain = allowedDomains.find((domain) => !config.allowedDomains.includes(domain));
-  if (unknownDomain) {
-    return res.status(400).json({ error: 'domain_not_allowed', domain: unknownDomain });
-  }
-
-  const payload = {
-    name,
-    allowed_domains: [...new Set(allowedDomains)].sort()
-  };
+  const { payload } = normalized;
   const approval = approvalService.requestOrApprove('create_space', payload, req.user.user_hash);
   if (!approval.ok) {
     return res.status(409).json({
@@ -685,10 +653,10 @@ app.post('/spaces', requireAuth, requireModerator, (req, res) => {
     return res.status(202).json({ approval_request: serializeApprovalRequest(approval.approvalRequest) });
   }
 
-  const space = store.createSpace(payload.name, payload.allowed_domains);
+  const space = spaceService.createSpace(payload);
   store.resolveApprovalRequest(approval.approvalRequest.id, { space_id: space.id });
   return res.status(201).json({
-    space: serializeSpace(space),
+    space,
     approval_request: serializeApprovalRequest(approval.approvalRequest)
   });
 });
