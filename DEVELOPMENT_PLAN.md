@@ -170,15 +170,16 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 - [x] Add operator notes for suppressed metrics in launch guide.
 - [x] Add docker compose profile notes for lower-privacy SMTP deployments.
 - [x] Add operator docs for detail-route access requirements.
+- [x] Add CI failure triage notes for production smoke checks.
 
 ## Suggested Next Sprint
 
 Recommended next tasks:
 
-1. Add CI failure triage notes for production smoke checks.
-2. Add launch-guide note for metrics retention review.
-3. Add Docker Compose OIDC env-file example for higher-privacy deployments.
-4. Add governance drill notes for appeal evidence review.
+1. Add launch-guide note for metrics retention review.
+2. Add Docker Compose OIDC env-file example for higher-privacy deployments.
+3. Add governance drill notes for appeal evidence review.
+4. Add readiness failure triage notes for production configuration.
 
 Suggested implementation order:
 

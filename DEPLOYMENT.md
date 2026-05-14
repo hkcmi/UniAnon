@@ -127,6 +127,14 @@ npm run smoke:production
 
 The smoke test starts the app with `NODE_ENV=production`, temporary production-safe secrets, a temporary SQLite database, SMTP mode, and a local random port. It checks `/health` and shuts down. It does not call `/auth/request-link`, so it does not send email.
 
+CI smoke triage:
+
+- If startup exits before `/health`, check the captured `stderr` for production config failures such as weak secrets, duplicate secrets, `EMAIL_DELIVERY=dev`, or a localhost `APP_BASE_URL`.
+- If the check times out, rerun locally with a larger timeout: `SMOKE_TIMEOUT_MS=30000 npm run smoke:production`.
+- If `/health` returns an unexpected payload, confirm `ALLOWED_DOMAINS` includes the expected domain and that the server reached the current code.
+- If you are worried about email delivery, verify the smoke environment: it uses `SMTP_HOST=smtp.invalid` and never calls the magic-link endpoint.
+- If CI fails only after the smoke step, inspect the readiness or bootstrap dry-run logs separately; they exercise different deployment checks.
+
 ## Production Readiness Command
 
 Against the environment you plan to deploy, run:
