@@ -357,6 +357,9 @@ function renderAppeals() {
       'No appeal votes yet.',
       (vote) => `${vote.weight} weight ${vote.decision} from ${vote.actor_ref}`
     );
+    node.querySelector('.appeal-detail-button').addEventListener('click', async () => {
+      await loadAppealDetail(appeal.id);
+    });
 
     const actions = node.querySelector('.appeal-actions');
     actions.classList.toggle('hidden', appeal.status !== 'open');
@@ -608,6 +611,21 @@ async function loadAppeals() {
     state.appeals = [];
   }
   renderAppeals();
+}
+
+async function loadAppealDetail(appealId) {
+  try {
+    const payload = await api(`/appeals/${appealId}`);
+    const index = state.appeals.findIndex((appeal) => appeal.id === appealId);
+    if (index >= 0) {
+      state.appeals[index] = payload.appeal;
+    } else {
+      state.appeals.unshift(payload.appeal);
+    }
+    renderAppeals();
+  } catch (error) {
+    alert(error.payload?.message || error.payload?.error || error.message);
+  }
 }
 
 async function loadApprovals() {
