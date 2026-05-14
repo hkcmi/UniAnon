@@ -3,6 +3,7 @@ import helmet from 'helmet';
 import { createApprovalService } from './approval-service.js';
 import { createAuthService } from './auth-service.js';
 import { assertProductionConfig, config } from './config.js';
+import { canAccessSpace, createContentService } from './content-service.js';
 import { createContentViewService } from './content-view-service.js';
 import { decideAppealResolution, decideCaseResolution } from './governance-decision-service.js';
 import { createGovernanceViewService, publicAuditRef } from './governance-view-service.js';
@@ -36,6 +37,7 @@ export const authService = createAuthService({
   sessionService,
   sessionTtlMs: config.sessionTtlMs
 });
+export const contentService = createContentService(store);
 export const contentViews = createContentViewService(store);
 export const governanceViews = createGovernanceViewService(store, {
   approvalThresholdForCase: (moderationCase) => caseApprovalThreshold(moderationCase)
@@ -458,18 +460,6 @@ function validateSpaceName(name) {
   return trimmed;
 }
 
-function canAccessSpace(user, space) {
-  if (!space) {
-    return false;
-  }
-
-  if (space.allowed_domains.length === 0) {
-    return true;
-  }
-
-  return Boolean(user && space.allowed_domains.includes(user.domain_group));
-}
-
 function findBearerUser(req) {
   return sessionService.findUserByAuthorization(req.get('authorization'));
 }
@@ -859,33 +849,30 @@ app.post('/posts', requireAuth, requireNickname, async (req, res) => {
   }
 
   const spaceId = typeof req.body.space_id === 'string' ? req.body.space_id : 'public';
-  const space = store.spaces.get(spaceId);
-  if (!canAccessSpace(req.user, space)) {
-    return res.status(403).json({ error: 'space_access_denied' });
+  const result = contentService.createPost({
+    user: req.user,
+    spaceId,
+    content
+  });
+  if (!result.ok) {
+    return res.status(result.status).json({ error: result.error });
   }
 
-  const post = store.createPost(req.user.user_hash, space.id, content);
-  return res.status(201).json({ post: contentViews.serializePost(post) });
+  return res.status(201).json({ post: contentViews.serializePost(result.post) });
 });
 
 app.get('/posts', optionalAuth, (req, res) => {
   const requestedSpaceId = typeof req.query.space_id === 'string' ? req.query.space_id : null;
-  const visiblePosts = [...store.posts.values()]
-    .filter((post) => !post.hidden)
-    .filter((post) => !requestedSpaceId || post.space_id === requestedSpaceId)
-    .filter((post) => canAccessSpace(req.user, store.spaces.get(post.space_id)))
-    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+  const visiblePosts = contentService.listVisiblePosts({
+    user: req.user,
+    spaceId: requestedSpaceId
+  })
     .map((post) => contentViews.serializePost(post));
 
   res.json({ posts: visiblePosts });
 });
 
 app.post('/posts/:postId/comments', requireAuth, requireNickname, async (req, res) => {
-  const post = store.posts.get(req.params.postId);
-  if (!post || post.hidden) {
-    return res.status(404).json({ error: 'post_not_found' });
-  }
-
   const content = validateContent(req.body.content);
   if (!content) {
     return res.status(400).json({ error: 'invalid_content' });
@@ -896,7 +883,16 @@ app.post('/posts/:postId/comments', requireAuth, requireNickname, async (req, re
     return;
   }
 
-  const comment = store.createComment(post.id, req.user.user_hash, content);
+  const result = contentService.createComment({
+    user: req.user,
+    postId: req.params.postId,
+    content
+  });
+  if (!result.ok) {
+    return res.status(result.status).json({ error: result.error });
+  }
+
+  const comment = result.comment;
   return res.status(201).json({
     comment: {
       id: comment.id,
