@@ -165,15 +165,16 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 - [x] Add CI bootstrap command dry-run step.
 - [x] Add aggregate metrics UI suppressed-count hint.
 - [x] Add Docker readiness command example.
+- [x] Add moderation detail UI loading status.
 
 ## Suggested Next Sprint
 
 Recommended next tasks:
 
-1. Add moderation detail UI loading status.
-2. Add CI smoke artifact summary.
-3. Add operator notes for suppressed metrics in launch guide.
-4. Add docker compose profile notes for lower-privacy SMTP deployments.
+1. Add CI smoke artifact summary.
+2. Add operator notes for suppressed metrics in launch guide.
+3. Add docker compose profile notes for lower-privacy SMTP deployments.
+4. Add operator docs for detail-route access requirements.
 
 Suggested implementation order:
 

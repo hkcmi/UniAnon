@@ -35,6 +35,7 @@ const elements = {
   postList: document.querySelector('#postList'),
   caseList: document.querySelector('#caseList'),
   appealList: document.querySelector('#appealList'),
+  governanceStatus: document.querySelector('#governanceStatus'),
   moderationPanel: document.querySelector('#moderationPanel'),
   auditRefreshButton: document.querySelector('#auditRefreshButton'),
   spaceForm: document.querySelector('#spaceForm'),
@@ -605,6 +606,7 @@ async function loadCases() {
 }
 
 async function loadCaseDetail(caseId) {
+  setStatus(elements.governanceStatus, 'Loading case detail...');
   try {
     const payload = await api(`/governance/cases/${caseId}`);
     const index = state.cases.findIndex((moderationCase) => moderationCase.id === caseId);
@@ -614,8 +616,9 @@ async function loadCaseDetail(caseId) {
       state.cases.unshift(payload.case);
     }
     renderCases();
+    setStatus(elements.governanceStatus, 'Case detail refreshed.');
   } catch (error) {
-    alert(error.payload?.message || error.payload?.error || error.message);
+    setStatus(elements.governanceStatus, error.payload?.message || error.payload?.error || error.message);
   }
 }
 
@@ -636,6 +639,7 @@ async function loadAppeals() {
 }
 
 async function loadAppealDetail(appealId) {
+  setStatus(elements.governanceStatus, 'Loading appeal detail...');
   try {
     const payload = await api(`/appeals/${appealId}`);
     const index = state.appeals.findIndex((appeal) => appeal.id === appealId);
@@ -645,8 +649,9 @@ async function loadAppealDetail(appealId) {
       state.appeals.unshift(payload.appeal);
     }
     renderAppeals();
+    setStatus(elements.governanceStatus, 'Appeal detail refreshed.');
   } catch (error) {
-    alert(error.payload?.message || error.payload?.error || error.message);
+    setStatus(elements.governanceStatus, error.payload?.message || error.payload?.error || error.message);
   }
 }
 
