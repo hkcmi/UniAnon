@@ -781,7 +781,9 @@ function maybeResolveCase(moderationCase) {
 app.get('/health', (req, res) => {
   res.json({
     ok: true,
-    allowed_domains: config.allowedDomains
+    allowed_domains: config.allowedDomains,
+    email_login_enabled: config.emailDelivery !== 'disabled',
+    oidc_enabled: Boolean(config.oidc.issuer && config.oidc.clientId && config.oidc.redirectUri)
   });
 });
 

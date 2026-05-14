@@ -92,6 +92,26 @@ test('serves the local web UI', async () => {
   assert.match(html, /<title>UniAnon<\/title>/);
 });
 
+test('reports public auth options in health check', async () => {
+  const originalDelivery = config.emailDelivery;
+  const originalOidc = { ...config.oidc };
+  config.emailDelivery = 'disabled';
+  config.oidc.issuer = 'https://idp.example.edu';
+  config.oidc.clientId = 'client-id';
+  config.oidc.redirectUri = 'https://unianon.example.edu/auth/oidc/callback';
+
+  try {
+    const response = await fetch(`${baseUrl}/health`);
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.email_login_enabled, false);
+    assert.equal(body.oidc_enabled, true);
+  } finally {
+    config.emailDelivery = originalDelivery;
+    Object.assign(config.oidc, originalOidc);
+  }
+});
+
 test('supports signup, nickname, post, and comment flow', async () => {
   const requestLink = await fetch(`${baseUrl}/auth/request-link`, {
     method: 'POST',

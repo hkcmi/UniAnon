@@ -10,6 +10,10 @@ const state = {
   metrics: null,
   auditLog: [],
   publicAuditLog: [],
+  authOptions: {
+    emailLoginEnabled: true,
+    oidcEnabled: false
+  },
   activeSpaceId: 'public'
 };
 
@@ -20,6 +24,7 @@ const elements = {
   authStatus: document.querySelector('#authStatus'),
   requestLinkForm: document.querySelector('#requestLinkForm'),
   verifyForm: document.querySelector('#verifyForm'),
+  oidcStartButton: document.querySelector('#oidcStartButton'),
   emailInput: document.querySelector('#emailInput'),
   tokenInput: document.querySelector('#tokenInput'),
   nicknamePanel: document.querySelector('#nicknamePanel'),
@@ -107,6 +112,18 @@ function canManageRoles() {
   return Boolean(state.user?.roles.includes('system_admin'));
 }
 
+function updateAuthControls() {
+  const emailLoginEnabled = state.authOptions.emailLoginEnabled;
+  const oidcEnabled = state.authOptions.oidcEnabled;
+  elements.requestLinkForm.classList.toggle('hidden', !emailLoginEnabled);
+  elements.verifyForm.classList.toggle('hidden', !emailLoginEnabled);
+  elements.oidcStartButton.classList.toggle('hidden', !oidcEnabled);
+
+  if (!state.user && !emailLoginEnabled) {
+    setStatus(elements.authStatus, oidcEnabled ? 'Use OIDC sign-in.' : 'No login method is configured.');
+  }
+}
+
 function updateSessionView() {
   const signedIn = Boolean(state.user);
   elements.authPanel.classList.toggle('hidden', signedIn);
@@ -115,6 +132,7 @@ function updateSessionView() {
   elements.nicknamePanel.classList.toggle('hidden', !signedIn || Boolean(state.user.nickname));
   elements.moderationPanel.classList.toggle('hidden', !canModerate());
   elements.roleManagement.classList.toggle('hidden', !canManageRoles());
+  updateAuthControls();
 
   if (!signedIn) {
     elements.sessionLine.textContent = 'Not signed in';
@@ -572,6 +590,22 @@ async function loadMe() {
   updateSessionView();
 }
 
+async function loadAuthOptions() {
+  try {
+    const payload = await api('/health');
+    state.authOptions = {
+      emailLoginEnabled: payload.email_login_enabled !== false,
+      oidcEnabled: Boolean(payload.oidc_enabled)
+    };
+  } catch {
+    state.authOptions = {
+      emailLoginEnabled: true,
+      oidcEnabled: false
+    };
+  }
+  updateAuthControls();
+}
+
 async function loadSpaces() {
   const payload = await api('/spaces');
   state.spaces = payload.spaces;
@@ -730,6 +764,7 @@ async function loadPublicAuditLog() {
 }
 
 async function refreshAll() {
+  await loadAuthOptions();
   await loadMe();
   await loadSpaces();
   await loadPosts();
@@ -825,6 +860,16 @@ elements.requestLinkForm.addEventListener('submit', async (event) => {
     } else {
       setStatus(elements.authStatus, 'Magic link sent.');
     }
+  } catch (error) {
+    setStatus(elements.authStatus, error.payload?.message || error.payload?.error || error.message);
+  }
+});
+
+elements.oidcStartButton.addEventListener('click', async () => {
+  setStatus(elements.authStatus, 'Starting OIDC sign-in...');
+  try {
+    const payload = await api('/auth/oidc/start');
+    window.location.assign(payload.authorization_url);
   } catch (error) {
     setStatus(elements.authStatus, error.payload?.message || error.payload?.error || error.message);
   }

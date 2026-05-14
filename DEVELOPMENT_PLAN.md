@@ -176,15 +176,16 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 - [x] Add governance drill notes for appeal evidence review.
 - [x] Add readiness failure triage notes for production configuration.
 - [x] Add operator reminder to review analytics policy before launch.
+- [x] Add explicit OIDC-only login UI state.
 
 ## Suggested Next Sprint
 
 Recommended next tasks:
 
-1. Add explicit OIDC-only login UI state.
-2. Add disabled-email API documentation.
-3. Add README link from readiness command to deployment triage notes.
-4. Add launch record field for identity provider privacy owner.
+1. Add disabled-email API documentation.
+2. Add README link from readiness command to deployment triage notes.
+3. Add launch record field for identity provider privacy owner.
+4. Add OIDC callback web handoff note.
 
 Suggested implementation order:
 
