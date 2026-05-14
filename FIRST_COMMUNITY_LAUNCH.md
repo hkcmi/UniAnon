@@ -251,7 +251,21 @@ Give moderators a short operating note:
 - Escalate privacy incidents immediately.
 - Use appeals in good faith.
 
-## Step 12: Launch Decision
+## Step 12: Review Aggregate Metrics
+
+The local Metrics panel and `GET /metrics/summary` are for operational health, not user investigation.
+
+Low activity counts are intentionally shown as `1-9` instead of exact values. Treat that range as "some activity happened" and do not try to combine it with timestamps, posts, reports, audit events, or outside knowledge to identify a user.
+
+Operator guidance:
+
+- Do not ask for exact low-count values.
+- Do not export metrics to a third-party analytics system unless the lower-privacy tradeoff is documented.
+- Do not use metrics as evidence in a moderation case.
+- Use audit events for governance accountability and metrics for system health; do not join them together.
+- Tell moderators that suppressed counts are a privacy feature, not missing data.
+
+## Step 13: Launch Decision
 
 Launch only when:
 
