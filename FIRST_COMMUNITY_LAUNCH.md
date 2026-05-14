@@ -301,6 +301,7 @@ Launch only when:
 - At least two moderators can access admin tools.
 - At least three trusted jurors can access jury tools.
 - Public audit log redaction has been reviewed.
+- [ANALYTICS_POLICY.md](ANALYTICS_POLICY.md) has been reviewed for the exact metrics, logs, and error reporting enabled at launch.
 
 ## Launch Record
 
@@ -319,6 +320,7 @@ Fill this in and keep it with deployment records:
 - Backup location:
 - Incident lead:
 - Metrics retention period:
+- Analytics policy reviewer:
 - Accepted privacy tradeoffs:
 - Launch approved by:
 - Launch time:
@@ -334,5 +336,6 @@ First week checks:
 - Confirm no plaintext email appears in database spot checks.
 - Confirm users understand appeals.
 - Tune thresholds only after reviewing real usage.
+- Re-review [ANALYTICS_POLICY.md](ANALYTICS_POLICY.md) before enabling any new metric, dashboard, export, third-party analytics service, or error reporting sink.
 
 Do not add analytics until a privacy-preserving analytics policy exists.
