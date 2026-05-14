@@ -14,6 +14,7 @@ import {
 } from './identity.js';
 import { createMembershipAssertion, verifyMembershipAssertion } from './membership-assertion.js';
 import { buildMetricsSummary } from './metrics-service.js';
+import { createModerationTargetService } from './moderation-target-service.js';
 import {
   createAuthorizationRequest,
   exchangeAuthorizationCode,
@@ -30,6 +31,7 @@ export const contentViews = createContentViewService(store);
 export const governanceViews = createGovernanceViewService(store, {
   approvalThresholdForCase: (moderationCase) => caseApprovalThreshold(moderationCase)
 });
+export const moderationTargets = createModerationTargetService(store);
 export const app = express();
 
 if (config.trustProxy) {
@@ -451,44 +453,6 @@ function canAccessSpace(user, space) {
   }
 
   return Boolean(user && space.allowed_domains.includes(user.domain_group));
-}
-
-function findReportTarget(targetType, targetId) {
-  if (targetType === 'post') {
-    const post = store.posts.get(targetId);
-    return post && !post.hidden ? { exists: true, accusedHash: post.user_hash } : null;
-  }
-
-  if (targetType === 'comment') {
-    const comment = store.comments.get(targetId);
-    return comment && !comment.hidden ? { exists: true, accusedHash: comment.user_hash } : null;
-  }
-
-  if (targetType === 'user') {
-    const user = store.users.get(targetId);
-    return user ? { exists: true, accusedHash: user.user_hash } : null;
-  }
-
-  return null;
-}
-
-function findAppealTarget(targetType, targetId) {
-  if (targetType === 'user') {
-    const user = store.users.get(targetId);
-    return user && user.banned ? { ownerHash: user.user_hash, punished: true } : null;
-  }
-
-  if (targetType === 'post') {
-    const post = store.posts.get(targetId);
-    return post && post.hidden ? { ownerHash: post.user_hash, punished: true } : null;
-  }
-
-  if (targetType === 'comment') {
-    const comment = store.comments.get(targetId);
-    return comment && comment.hidden ? { ownerHash: comment.user_hash, punished: true } : null;
-  }
-
-  return null;
 }
 
 function findBearerUser(req) {
@@ -1034,7 +998,7 @@ app.post('/reports', requireAuth, requireNickname, async (req, res) => {
     return res.status(400).json({ error: 'invalid_target_type' });
   }
 
-  const target = findReportTarget(targetType, targetId);
+  const target = moderationTargets.findReportTarget(targetType, targetId);
   if (!target) {
     return res.status(404).json({ error: 'target_not_found' });
   }
@@ -1169,7 +1133,7 @@ app.post('/appeals', (req, res) => {
     return res.status(400).json({ error: 'invalid_reason' });
   }
 
-  const target = findAppealTarget(targetType, targetId);
+  const target = moderationTargets.findAppealTarget(targetType, targetId);
   if (!target) {
     return res.status(404).json({ error: 'appealable_target_not_found' });
   }

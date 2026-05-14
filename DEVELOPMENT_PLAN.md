@@ -214,6 +214,7 @@ Goal: keep UniAnon as an independent privacy-first community product and harden 
 - [x] Extract aggregate metrics into a privacy-preserving service boundary.
 - [x] Extract governance evidence serialization into a redacted view service.
 - [x] Extract post/comment serialization into a content view service.
+- [x] Extract report and appeal target lookup into a moderation target service.
 
 ## Automation Backlog
 
